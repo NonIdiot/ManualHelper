@@ -10,6 +10,8 @@ MODOPTIONS_MANUALHELPER_LeftCrouchedClimbjumping=
   Left Crouched Climbjumping
 MODOPTIONS_MANUALHELPER_LeftWalljumps=
   Left Non-Grab Wall Interactions
+MODOPTIONS_MANUALHELPER_LeftWallbounces=
+  Left Wallbounces
 MODOPTIONS_MANUALHELPER_RightClinging=
   Right Clinging
 MODOPTIONS_MANUALHELPER_RightUncrouchedClimbjumping=
@@ -18,9 +20,12 @@ MODOPTIONS_MANUALHELPER_RightCrouchedClimbjumping=
   Right Crouched Climbjumping
 MODOPTIONS_MANUALHELPER_RightWalljumps=
   Right Non-Grab Wall Interactions
+MODOPTIONS_MANUALHELPER_RightWallbounces=
+  Right Wallbounces
   
 MODOPTIONS_MANUALHELPER_LeftClingingDesc=
   Allows the player to grab onto left walls directly.
+  (Does not prevent some entities from thinking they are "grabbed".)
 MODOPTIONS_MANUALHELPER_LeftUncrouchedClimbjumpingDesc=
   Allows the player to climbjump on left walls while not crouched.
 MODOPTIONS_MANUALHELPER_LeftCrouchedClimbjumpingDesc=
@@ -31,6 +36,7 @@ MODOPTIONS_MANUALHELPER_LeftWallbouncesDesc=
   Allows the player to wallbounce on left walls.
 MODOPTIONS_MANUALHELPER_RightClingingDesc=
   Allows the player to grab onto right walls directly.
+  (Does not prevent some entities from thinking they are "grabbed".)
 MODOPTIONS_MANUALHELPER_RightUncrouchedClimbjumpingDesc=
   Allows the player to climbjump on right walls while not crouched.
 MODOPTIONS_MANUALHELPER_RightCrouchedClimbjumpingDesc=
@@ -45,3 +51,24 @@ MODOPTIONS_MANUALHELPER_UsableDashAttack=
 MODOPTIONS_MANUALHELPER_UsableDashAttackDesc=
   If disabled, prevents "DashAttacking" from returning true.
   (Prevents dashing into Crystal Hearts, Breaker Boxes, etc.)
+MODOPTIONS_MANUALHELPER_HeartDoors=
+  Heart Doors
+MODOPTIONS_MANUALHELPER_HeartDoorsDesc=
+  Allows Heart Doors to open.
+  (Limited functionality for modded Heart Doors.)
+  
+MODOPTIONS_MANUALHELPER_WallTogglesHeader=
+  Wall Toggles
+MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader=
+  Vanilla Entity Toggles
+  
+  
+MODOPTIONS_MANUALHELPER_AllMapDefault=
+  Set all (of section) to Map Default
+MODOPTIONS_MANUALHELPER_AllOff=
+  Set all (of section) to Off
+MODOPTIONS_MANUALHELPER_AllOn=
+  Set all (of section) to On
+  
+MODOPTIONS_MANUALHELPER_AwesomeButton=
+  Awesome Button

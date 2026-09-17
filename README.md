@@ -1,5 +1,5 @@
 # ManualHelper
-A mod by NonIdiot that helps with creating Archipelago Randomizers (through Manual, Taskipelago, or another way) for various Celeste Mods. Also adds a gym!
+A mod by NonIdiot that helps with creating Archipelago Randomizers (through Manual, Taskipelago, or another way) for various Celeste Mods, among other things for map creators. Also adds a gym!
 Features:
 
  * A new map, called ManualHelper Gym, that helps with teaching some obscure tech that might be used in Manuals made by this mod.

@@ -1,9 +1,21 @@
+using YamlDotNet.Serialization;
+
 namespace Celeste.Mod.ManualHelper;
 
 public class ManualHelperModuleSettings : EverestModuleSettings {
     
     // settings
+    
+    public enum UsableDashAttack { MapDefault, Off, On }
+    [SettingSubText("MODOPTIONS_MANUALHELPER_UsableDashAttackDesc")]
+    [SettingName("MODOPTIONS_MANUALHELPER_UsableDashAttack")]
+    public UsableDashAttack UsableDashAttackSlider { get; set; } = UsableDashAttack.MapDefault;
+
+
+    //[YamlIgnore]
+    //public bool SubmenuExample { get; set; }
     public enum LeftClinging { MapDefault, Off, On }
+    [SettingSubHeader("MODOPTIONS_MANUALHELPER_WallTogglesHeader")]
 
     [SettingSubText("MODOPTIONS_MANUALHELPER_LeftClingingDesc")]
     [SettingName("MODOPTIONS_MANUALHELPER_LeftClinging")]
@@ -47,8 +59,9 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
     public RightWallbounces RightWallbouncesSlider { get; set; } = RightWallbounces.MapDefault;
     
     
-    public enum UsableDashAttack { MapDefault, Off, On }
-    [SettingSubText("MODOPTIONS_MANUALHELPER_UsableDashAttackDesc")]
-    [SettingName("MODOPTIONS_MANUALHELPER_UsableDashAttack")]
-    public UsableDashAttack UsableDashAttackSlider { get; set; } = UsableDashAttack.MapDefault;
+    public enum HeartDoors { MapDefault, Off, On }
+    [SettingSubHeader("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader")]
+    [SettingSubText("MODOPTIONS_MANUALHELPER_HeartDoorsDesc")]
+    [SettingName("MODOPTIONS_MANUALHELPER_HeartDoors")]
+    public HeartDoors HeartDoorsSlider { get; set; } = HeartDoors.MapDefault;
 }
