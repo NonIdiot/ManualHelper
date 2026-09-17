@@ -1,0 +1,47 @@
+ManualHelper_NonIdiot=
+  ManualHelper Maps
+ManualHelper_NonIdiot_ManualHelper_Gym=
+  ManualHelper Gym
+MODOPTIONS_MANUALHELPER_LeftClinging=
+  Left Clinging
+MODOPTIONS_MANUALHELPER_LeftUncrouchedClimbjumping=
+  Left Uncrouched Climbjumping
+MODOPTIONS_MANUALHELPER_LeftCrouchedClimbjumping=
+  Left Crouched Climbjumping
+MODOPTIONS_MANUALHELPER_LeftWalljumps=
+  Left Non-Grab Wall Interactions
+MODOPTIONS_MANUALHELPER_RightClinging=
+  Right Clinging
+MODOPTIONS_MANUALHELPER_RightUncrouchedClimbjumping=
+  Right Uncrouched Climbjumping
+MODOPTIONS_MANUALHELPER_RightCrouchedClimbjumping=
+  Right Crouched Climbjumping
+MODOPTIONS_MANUALHELPER_RightWalljumps=
+  Right Non-Grab Wall Interactions
+  
+MODOPTIONS_MANUALHELPER_LeftClingingDesc=
+  Allows the player to grab onto left walls directly.
+MODOPTIONS_MANUALHELPER_LeftUncrouchedClimbjumpingDesc=
+  Allows the player to climbjump on left walls while not crouched.
+MODOPTIONS_MANUALHELPER_LeftCrouchedClimbjumpingDesc=
+  Allows the player to climbjump on left walls while crouched.
+MODOPTIONS_MANUALHELPER_LeftWalljumpsDesc=
+  Allows the player to walljump, neutral jump, and slide on right walls.
+MODOPTIONS_MANUALHELPER_LeftWallbouncesDesc=
+  Allows the player to wallbounce on left walls.
+MODOPTIONS_MANUALHELPER_RightClingingDesc=
+  Allows the player to grab onto right walls directly.
+MODOPTIONS_MANUALHELPER_RightUncrouchedClimbjumpingDesc=
+  Allows the player to climbjump on right walls while not crouched.
+MODOPTIONS_MANUALHELPER_RightCrouchedClimbjumpingDesc=
+  Allows the player to climbjump on right walls while crouched.
+MODOPTIONS_MANUALHELPER_RightWalljumpsDesc=
+  Allows the player to walljump, neutral jump, and slide on right walls.
+MODOPTIONS_MANUALHELPER_RightWallbouncesDesc=
+  Allows the player to wallbounce on right walls.
+
+MODOPTIONS_MANUALHELPER_UsableDashAttack=
+  Usable Dash Attack
+MODOPTIONS_MANUALHELPER_UsableDashAttackDesc=
+  If disabled, prevents "DashAttacking" from returning true.
+  (Prevents dashing into Crystal Hearts, Breaker Boxes, etc.)
