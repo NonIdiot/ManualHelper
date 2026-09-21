@@ -1,7 +1,20 @@
+modname_ManualHelper=
+  ManualHelper
 ManualHelper_NonIdiot=
   ManualHelper Maps
 ManualHelper_NonIdiot_ManualHelper_Gym=
   ManualHelper Gym
+  
+  
+MODOPTIONS_MANUALHELPER_MapDefault=
+  Map Default
+MODOPTIONS_MANUALHELPER_Off=
+  Off
+MODOPTIONS_MANUALHELPER_On=
+  On
+  
+MODOPTIONS_MANUALHELPER_WallTogglesHeader=
+  Wall Toggles
 MODOPTIONS_MANUALHELPER_LeftClinging=
   Left Clinging
 MODOPTIONS_MANUALHELPER_LeftUncrouchedClimbjumping=
@@ -22,7 +35,6 @@ MODOPTIONS_MANUALHELPER_RightWalljumps=
   Right Non-Grab Wall Interactions
 MODOPTIONS_MANUALHELPER_RightWallbounces=
   Right Wallbounces
-  
 MODOPTIONS_MANUALHELPER_LeftClingingDesc=
   Allows the player to grab onto left walls directly.
   (Does not prevent some entities from thinking they are "grabbed".)
@@ -46,22 +58,46 @@ MODOPTIONS_MANUALHELPER_RightWalljumpsDesc=
 MODOPTIONS_MANUALHELPER_RightWallbouncesDesc=
   Allows the player to wallbounce on right walls.
 
+MODOPTIONS_MANUALHELPER_DashTogglesHeader=
+  Dash Toggles
 MODOPTIONS_MANUALHELPER_UsableDashAttack=
   Usable Dash Attack
 MODOPTIONS_MANUALHELPER_UsableDashAttackDesc=
   If disabled, prevents "DashAttacking" from returning true.
   (Prevents dashing into Crystal Hearts, Breaker Boxes, etc.)
+  
+MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader=
+  Vanilla Entity Toggles
 MODOPTIONS_MANUALHELPER_HeartDoors=
   Heart Doors
 MODOPTIONS_MANUALHELPER_HeartDoorsDesc=
   Allows Heart Doors to open.
   (Limited functionality for modded Heart Doors.)
+MODOPTIONS_MANUALHELPER_CrumbleBlocks=
+  Crumble Blocks
+MODOPTIONS_MANUALHELPER_CrumbleBlocksDesc=
+  If disabled, grabbing or standing on a Crumble Block instantly crumbles it,
+  prevents jumping, and depletes all dashes.
   
-MODOPTIONS_MANUALHELPER_WallTogglesHeader=
-  Wall Toggles
-MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader=
-  Vanilla Entity Toggles
   
+MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled=
+  Pause Menu Button Enabled
+MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabledDesc=
+  Adds a button to the pause menu.
+MODOPTIONS_MANUALHELPER_OpenManualHelperMenu=
+  Open ManualHelper Menu
+MODOPTIONS_MANUALHELPER_OpenManualHelperMenuDesc=
+  Opens the ManualHelper menu.
+  
+MODOPTIONS_MANUALHELPER_ExplainLine1=
+  Orange means this Toggle was changed only by the player.
+MODOPTIONS_MANUALHELPER_ExplainLine2=
+  Blue means this Toggle was changed only by the map.
+MODOPTIONS_MANUALHELPER_ExplainLine3=
+  Pink means this Toggle was changed by the map and then also the player.
+  
+MODOPTIONS_MANUALHELPER_MiscellaneousHeader=
+  Miscellaneous
   
 MODOPTIONS_MANUALHELPER_AllMapDefault=
   Set all (of section) to Map Default

@@ -5,10 +5,20 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
 using ExtendedVariants;
+using Celeste.Mod.CommunalHelper;
+using Celeste.Mod.CommunalHelper.DashStates;
+using Celeste.Mod.UI;
+using ExtendedVariants.UI;
+using FMOD.Studio;
+using MonoMod.ModInterop;
 
 namespace Celeste.Mod.ManualHelper;
 
 public class ManualHelper : EverestModule {
+    public static string[] ManualHelperTogglesGrabs = ["LeftClinging","LeftUncrouchedClimbjumping","LeftCrouchedClimbjumping","LeftWalljumps","LeftWallbounces","RightClinging","RightUncrouchedClimbjumping","RightCrouchedClimbjumping","RightWalljumps","RightWallbounces"];
+    public static string[] ManualHelperTogglesDashes = ["UsableDashAttack"];
+    public static string[] ManualHelperTogglesVanillaEntities = ["HeartDoors","CrumbleBlocks"];
+    
     public static ManualHelper Instance { get; private set; }
     public override Type SettingsType => typeof(ManualHelperModuleSettings);
     public static ManualHelperModuleSettings Settings => (ManualHelperModuleSettings) Instance._Settings;
@@ -31,6 +41,8 @@ public class ManualHelper : EverestModule {
     private static Hook dashAttackingHook;
     private static Hook heartDoorHook;
     private static bool isRenderingCode = false;
+    public static bool communalHelperLoaded;
+    public EverestModuleMetadata communalHelper;
     public override void Load() {
         // apply any hooks that should always be active
         dashAttackingHook = new Hook(
@@ -49,6 +61,19 @@ public class ManualHelper : EverestModule {
         On.Celeste.Player.UpdateSprite += OnCelestePlayerUpdateSprite;
         On.Celeste.HeartGemDoor.Added += OnCelesteHeartGemDoorAdded;
         Everest.Events.Level.OnCreatePauseMenuButtons += EverestEventsLevelOnCreatePauseMenuButtons;
+        On.Celeste.Solid.GetPlayerOnTop += OnCelesteSolidGetPlayerOnTop;
+        On.Celeste.Solid.GetPlayerClimbing += OnCelesteSolidGetPlayerClimbing;
+        
+        communalHelper = new() {
+            Name = "CommunalHelper",
+            Version = new Version(1, 2 ,0)
+        };
+
+        communalHelperLoaded = Everest.Loader.DependencyLoaded(communalHelper);
+        if (communalHelperLoaded)
+        {
+            typeof(CommunalHelperImports).ModInterop();
+        }
     }
 
     public override void Unload() {
@@ -65,8 +90,72 @@ public class ManualHelper : EverestModule {
         On.Celeste.Player.UpdateSprite -= OnCelestePlayerUpdateSprite;
         On.Celeste.HeartGemDoor.Added -= OnCelesteHeartGemDoorAdded;
         Everest.Events.Level.OnCreatePauseMenuButtons -= EverestEventsLevelOnCreatePauseMenuButtons;
+        On.Celeste.Solid.GetPlayerOnTop -= OnCelesteSolidGetPlayerOnTop;
+        On.Celeste.Solid.GetPlayerClimbing -= OnCelesteSolidGetPlayerClimbing;
     }
     
+    [ModImportName("CommunalHelper.DashStates")]
+    public static class CommunalHelperImports
+    {
+        public static Func<bool> HasDreamTunnelDash;
+    }
+
+    public static void MakeModMenu(Level level, string text)
+    {
+        TextMenu modMenu = OuiModOptions.CreateMenu(true, (EventInstance) null!);
+        
+
+        Action closeMenu = (() =>
+        {
+            Audio.Play("event:/ui/main/button_back");
+            modMenu.Close();
+            level.Paused = false;
+        });
+        modMenu.OnCancel = closeMenu;
+        modMenu.OnESC = closeMenu;
+        modMenu.OnPause = closeMenu;
+
+        level.Paused = true;
+        modMenu.Selection = modMenu.FirstPossibleSelection;
+        for (int a = 0; a < modMenu.Items.Count; a++)
+        {
+            if (modMenu.Items[a].SearchLabel() == text)
+            {
+                modMenu.Selection = a;
+                break;
+            }
+        }
+        level.Add(modMenu);
+        Audio.Play("event:/ui/main/button_select");
+        return;
+    }
+
+    public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
+    {
+        CreateModMenuSectionHeader(menu, inGame, pauseSnapshot);
+        // subheaders at top
+        menu.Add(new TextMenuExt.SubHeaderExt(Dialog.Clean("MODOPTIONS_MANUALHELPER_ExplainLine1")) { TextColor = Color.Goldenrod, HeightExtra = 0 });
+        menu.Add(new TextMenuExt.SubHeaderExt(Dialog.Clean("MODOPTIONS_MANUALHELPER_ExplainLine2")) { TextColor = Color.DeepSkyBlue, HeightExtra = 0 });
+        menu.Add(new TextMenuExt.SubHeaderExt(Dialog.Clean("MODOPTIONS_MANUALHELPER_ExplainLine3")) { TextColor = Color.Pink, HeightExtra = 0 });
+        
+        // major submenus
+        TextMenuExt.SubMenu myMenu1 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader"), false);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu1,inGame);
+        menu.Add(myMenu1);
+        TextMenuExt.SubMenu myMenu2 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader"), false);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu2,inGame);
+        menu.Add(myMenu2);
+        TextMenuExt.SubMenu myMenu3 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader"), false);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu3,inGame);
+        menu.Add(myMenu3);
+        // misc
+        menu.Add(new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled"), Settings.PauseMenuButtonEnabled)
+            .Change(v => Settings.PauseMenuButtonEnabled = v));
+        // the keybind uh. somehow is still there. idk why i dont need to add it here lmao
+        
+        CreateModMenuSectionKeyBindings(menu, inGame, pauseSnapshot);
+    }
+
     // commands
     [Command("mh_get_toggle_data", "[from ManualHelper] gets the value of a given manualhelper toggle")]
     public static void CmdGetToggleData(string input)
@@ -102,73 +191,79 @@ public class ManualHelper : EverestModule {
     public static int GetToggleData(string whichOne)
     {
         // returns 0 if Map Default, 1 if Off, and 2 if On
-        if (whichOne == "UsableDashAttack")
+
+        if (Settings.DynamicSettings.ContainsKey(whichOne))
         {
-            return Settings.UsableDashAttackSlider == ManualHelperModuleSettings.UsableDashAttack.MapDefault ? 0 : 
+            return (Settings.DynamicSettings[whichOne])[0];
+        }
+
+        /*if (whichOne == "UsableDashAttack")
+        {
+            return Settings.UsableDashAttackSlider == ManualHelperModuleSettings.UsableDashAttack.MapDefault ? 0 :
                 (Settings.UsableDashAttackSlider == ManualHelperModuleSettings.UsableDashAttack.Off ? 1 : 2);
         }
-        
-        
+
+
         if (whichOne == "LeftClinging")
         {
-            return Settings.LeftClingingSlider == ManualHelperModuleSettings.LeftClinging.MapDefault ? 0 : 
+            return (Settings.DynamicSettings["LeftClinging"]) == ManualHelperModuleSettings.LeftClinging.MapDefault ? 0 :
                 (Settings.LeftClingingSlider == ManualHelperModuleSettings.LeftClinging.Off ? 1 : 2);
         }
         if (whichOne == "LeftUncrouchedClimbjumping")
         {
-            return Settings.LeftUncrouchedClimbjumpingSlider == ManualHelperModuleSettings.LeftUncrouchedClimbjumping.MapDefault ? 0 : 
+            return Settings.LeftUncrouchedClimbjumpingSlider == ManualHelperModuleSettings.LeftUncrouchedClimbjumping.MapDefault ? 0 :
                 (Settings.LeftUncrouchedClimbjumpingSlider == ManualHelperModuleSettings.LeftUncrouchedClimbjumping.Off ? 1 : 2);
         }
         if (whichOne == "LeftCrouchedClimbjumping")
         {
-            return Settings.LeftCrouchedClimbjumpingSlider == ManualHelperModuleSettings.LeftCrouchedClimbjumping.MapDefault ? 0 : 
+            return Settings.LeftCrouchedClimbjumpingSlider == ManualHelperModuleSettings.LeftCrouchedClimbjumping.MapDefault ? 0 :
                 (Settings.LeftCrouchedClimbjumpingSlider == ManualHelperModuleSettings.LeftCrouchedClimbjumping.Off ? 1 : 2);
         }
         if (whichOne == "LeftWalljumps")
         {
-            return Settings.LeftWalljumpsSlider == ManualHelperModuleSettings.LeftWalljumps.MapDefault ? 0 : 
+            return Settings.LeftWalljumpsSlider == ManualHelperModuleSettings.LeftWalljumps.MapDefault ? 0 :
                 (Settings.LeftWalljumpsSlider == ManualHelperModuleSettings.LeftWalljumps.Off ? 1 : 2);
         }
         if (whichOne == "LeftWallbounces")
         {
-            return Settings.LeftWallbouncesSlider == ManualHelperModuleSettings.LeftWallbounces.MapDefault ? 0 : 
+            return Settings.LeftWallbouncesSlider == ManualHelperModuleSettings.LeftWallbounces.MapDefault ? 0 :
                 (Settings.LeftWallbouncesSlider == ManualHelperModuleSettings.LeftWallbounces.Off ? 1 : 2);
         }
-        
+
         if (whichOne == "RightClinging")
         {
-            return Settings.RightClingingSlider == ManualHelperModuleSettings.RightClinging.MapDefault ? 0 : 
+            return Settings.RightClingingSlider == ManualHelperModuleSettings.RightClinging.MapDefault ? 0 :
                 (Settings.RightClingingSlider == ManualHelperModuleSettings.RightClinging.Off ? 1 : 2);
         }
         if (whichOne == "RightUncrouchedClimbjumping")
         {
-            return Settings.RightUncrouchedClimbjumpingSlider == ManualHelperModuleSettings.RightUncrouchedClimbjumping.MapDefault ? 0 : 
+            return Settings.RightUncrouchedClimbjumpingSlider == ManualHelperModuleSettings.RightUncrouchedClimbjumping.MapDefault ? 0 :
                 (Settings.RightUncrouchedClimbjumpingSlider == ManualHelperModuleSettings.RightUncrouchedClimbjumping.Off ? 1 : 2);
         }
         if (whichOne == "RightCrouchedClimbjumping")
         {
-            return Settings.RightCrouchedClimbjumpingSlider == ManualHelperModuleSettings.RightCrouchedClimbjumping.MapDefault ? 0 : 
+            return Settings.RightCrouchedClimbjumpingSlider == ManualHelperModuleSettings.RightCrouchedClimbjumping.MapDefault ? 0 :
                 (Settings.RightCrouchedClimbjumpingSlider == ManualHelperModuleSettings.RightCrouchedClimbjumping.Off ? 1 : 2);
         }
         if (whichOne == "RightWalljumps")
         {
-            return Settings.RightWalljumpsSlider == ManualHelperModuleSettings.RightWalljumps.MapDefault ? 0 : 
+            return Settings.RightWalljumpsSlider == ManualHelperModuleSettings.RightWalljumps.MapDefault ? 0 :
                 (Settings.RightWalljumpsSlider == ManualHelperModuleSettings.RightWalljumps.Off ? 1 : 2);
         }
         if (whichOne == "RightWallbounces")
         {
-            return Settings.RightWallbouncesSlider == ManualHelperModuleSettings.RightWallbounces.MapDefault ? 0 : 
+            return Settings.RightWallbouncesSlider == ManualHelperModuleSettings.RightWallbounces.MapDefault ? 0 :
                 (Settings.RightWallbouncesSlider == ManualHelperModuleSettings.RightWallbounces.Off ? 1 : 2);
         }
-        
-        
+
+
         if (whichOne == "HeartDoors")
         {
-            return Settings.HeartDoorsSlider == ManualHelperModuleSettings.HeartDoors.MapDefault ? 0 : 
+            return Settings.HeartDoorsSlider == ManualHelperModuleSettings.HeartDoors.MapDefault ? 0 :
                 (Settings.HeartDoorsSlider == ManualHelperModuleSettings.HeartDoors.Off ? 1 : 2);
-        }
-        
-        
+        }*/
+
+
         // but like, return -1 if the option is not found
         Logger.Log(nameof(ManualHelper),"[Error NonIdiot000] Hey twin, option "+whichOne+" isn't a valid ManualHelper Option. Seems like a skill issue.");
         return -1;
@@ -192,14 +287,34 @@ public class ManualHelper : EverestModule {
         if (myOption == 0)
         {
             // TODO: insert flags stuff here later once that's implemented
+            
             return true;
         }
         // otherwise return bool of if the given option is On
         return myOption == 2;
     }
+    
+    public static int GetFlag(string flagName)
+    {
+        //thank u snip/tart1998 for the help
+        if (Engine.Scene is not Level level)
+            // handle case when you're not in a level
+            return -1;
+
+        return level.Session.GetFlag(flagName) ? 1 : 0;
+    }
+
+    public static void SetFlag(string flagName, bool setTo)
+    {
+        if (Engine.Scene is not Level level)
+            // handle case when you're not in a level
+            return;
+
+        level.Session.SetFlag(flagName,setTo);
+    }
 
     // hooks
-    
+
     // for preventing climbing stuff
     private static bool OnCelestePlayerClimbCheck(On.Celeste.Player.orig_ClimbCheck orig, Player self, int dir, int yAdd)
     {
@@ -210,15 +325,15 @@ public class ManualHelper : EverestModule {
 
         return orig(self, dir, yAdd);
     }
-    
+
     // for preventing climbjump stuff
     private static void OnCelestePlayerClimbJump(On.Celeste.Player.orig_ClimbJump orig, Player self)
     {
         if ((self.Facing == Facings.Left ?
-                (self.Ducking ? ReturnFromBoolToggle("LeftCrouchedClimbjumping") : 
-                    ReturnFromBoolToggle("LeftUncrouchedClimbjumping")) : 
-                (self.Ducking ? ReturnFromBoolToggle("RightCrouchedClimbjumping") : 
-                    ReturnFromBoolToggle("RightUncrouchedClimbjumping"))) 
+                (self.Ducking ? ReturnFromBoolToggle("LeftCrouchedClimbjumping") :
+                    ReturnFromBoolToggle("LeftUncrouchedClimbjumping")) :
+                (self.Ducking ? ReturnFromBoolToggle("RightCrouchedClimbjumping") :
+                    ReturnFromBoolToggle("RightUncrouchedClimbjumping")))
             || self.level.InCredits)
         {
             orig(self);
@@ -284,7 +399,7 @@ public class ManualHelper : EverestModule {
         }
         return orig(self);
     }
-    
+
     // for preventing dash attack state. thx to maddie480's Extended Variants for the code!
     // ReSharper disable once UnusedMember.Local
     private static bool weirdHookCelestePlayerGetDashAttacking(Func<Player, bool> orig, Player self) {
@@ -309,7 +424,7 @@ public class ManualHelper : EverestModule {
         (scene as Level).Session.SetFlag("opened_heartgem_door_" + self.Requires, false);
         orig(self, scene);
     }
-    
+
     // Prevents heart door from opening
     // ReSharper disable once UnusedMember.Local
     private static float weirdHookCelesteHeartGemDoorSetCounter(Func<HeartGemDoor, float> orig, HeartGemDoor self) {
@@ -322,17 +437,88 @@ public class ManualHelper : EverestModule {
 
     private void EverestEventsLevelOnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal)
     {
-        if (CoreModule.Settings != null && !CoreModule.Settings.ShowModOptionsInGame) return;
-        
-        int optionsIndex = menu.Items.FindIndex(item =>
-            item.GetType() == typeof(TextMenu.Button) && ((TextMenu.Button) item).Label == Dialog.Clean("menu_pause_retry"));
+        if (CoreModule.Settings == null) return;
+        if (!Settings.PauseMenuButtonEnabled) return;
 
-        menu.Insert(optionsIndex+1, new TextMenu.Button(Dialog.Clean("MODOPTIONS_MANUALHELPER_AwesomeButton")) {
+        int optionsIndex = menu.Items.FindIndex(item =>
+            item.GetType() == typeof(TextMenu.Button) && ((TextMenu.Button) item).Label == Dialog.Clean("menu_pause_resume"));
+
+        menu.Insert(optionsIndex+2, new TextMenu.Button(Dialog.Clean("MODOPTIONS_MANUALHELPER_AwesomeButton")) {
             OnPressed = () => {
+                if (communalHelperLoaded)
+                {
+                    Logger.Log(nameof(ManualHelper),CommunalHelperImports.HasDreamTunnelDash().ToString());
+                }
+                else
+                {
+                    Logger.Log(nameof(ManualHelper), "There is no Communal Helper in Ba Sing Se.");
+                }
+                if (false)
+                {
+                    //Logger.Log(nameof(ManualHelper),CommunalHelperImports.HasDreamTunnelDash().ToString());
+                }
+                else
+                {
+                    //Logger.Log(nameof(ManualHelper), "Whoops! You have to put the <modname> in your computer!");
+                }
+
                 menu.OnCancel();
+                MakeModMenu(level,Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader"));//Manual Helper//modoptions_ManualHelper_title
                 //hintController.ShowHint();
             },
             //Disabled = hintController.SingleUse && hintController.UsedFlagValue,
         });
+    }
+
+    private static Player OnCelesteSolidGetPlayerOnTop(On.Celeste.Solid.orig_GetPlayerOnTop orig, Solid self)
+    {
+        if (self is CrumblePlatform)
+        {
+            if (!ReturnFromBoolToggle("CrumbleBlocks"))
+            {
+                if (self.Collidable)
+                {
+                    if (orig(self) != null)
+                    {
+                        self.Collidable = false;
+                        Player realSelf = orig(self);
+                        realSelf.Dashes = 0;
+                        return realSelf;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        return orig(self);
+    }
+
+    private static Player OnCelesteSolidGetPlayerClimbing(On.Celeste.Solid.orig_GetPlayerClimbing orig, Solid self)
+    {
+        if (self is CrumblePlatform)
+        {
+            if (!ReturnFromBoolToggle("CrumbleBlocks"))
+            {
+                if (self.Collidable)
+                {
+                    if (orig(self) != null)
+                    {
+                        self.Collidable = false;
+                        Player realSelf = orig(self);
+                        realSelf.Dashes = 0;
+                        return realSelf;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        return orig(self);
     }
 }

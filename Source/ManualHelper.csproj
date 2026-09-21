@@ -26,6 +26,9 @@
         <PackageReference Include="CelesteMod.Publicizer" Version="*" CelesteAssembly="$(CelestePrefix)\Celeste.dll" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
         <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" />
+        <Reference Include="CommunalHelper">
+          <HintPath>..\bin\CommunalHelper.dll</HintPath>
+        </Reference>
         <Reference Include="DotNetZip">
           <HintPath>..\..\..\DotNetZip.dll</HintPath>
         </Reference>
@@ -34,6 +37,9 @@
         </Reference>
         <Reference Include="FNA">
           <HintPath>..\..\..\FNA.dll</HintPath>
+        </Reference>
+        <Reference Include="GravityHelper">
+          <HintPath>..\bin\GravityHelper.dll</HintPath>
         </Reference>
         <Reference Include="KeraLua">
           <HintPath>..\..\..\KeraLua.dll</HintPath>
