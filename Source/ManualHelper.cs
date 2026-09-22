@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste.Mod.Core;
@@ -86,6 +87,7 @@ public class ManualHelper : EverestModule {
         Everest.Events.Level.OnEnter += EverestEventsLevelOnEnter;
         On.Celeste.Player.Render += OnCelestePlayerRender;
         On.Celeste.Player.UpdateHair += OnCelestePlayerUpdateHair;
+        On.Celeste.Snowball.OnPlayerBounce += OnCelesteSnowballOnPlayerBounce;
     }
 
     public override void Unload() {
@@ -107,6 +109,7 @@ public class ManualHelper : EverestModule {
         Everest.Events.Level.OnEnter -= EverestEventsLevelOnEnter;
         On.Celeste.Player.Render -= OnCelestePlayerRender;
         On.Celeste.Player.UpdateHair -= OnCelestePlayerUpdateHair;
+        On.Celeste.Snowball.OnPlayerBounce -= OnCelesteSnowballOnPlayerBounce;
     }
 
     [ModImportName("CommunalHelper.DashStates")]
@@ -147,6 +150,7 @@ public class ManualHelper : EverestModule {
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
     {
+        Settings.InitializeDynamicSettings();
         CreateModMenuSectionHeader(menu, inGame, pauseSnapshot);
         // subheaders at top
         menu.Add(new TextMenuExt.SubHeaderExt(Dialog.Clean("MODOPTIONS_MANUALHELPER_ExplainLine1")) { TextColor = ManualHelper.ManualHelperAllMenuColors[0], HeightExtra = 0 });
@@ -333,12 +337,13 @@ public class ManualHelper : EverestModule {
 
     public static void InitFlags(Session session)
     {
-        //if (Engine.Scene is not Level level)
-        //{
+        // this breaks things sometimes. for some reason. idk
+        /*if (Engine.Scene is not Level level)
+        {
             // handle case when you're not in a level
-            //Logger.Log(LogLevel.Info,"ManualHelper_InitFlags","Hey, looks like you tried to InitFlags() while not in a level. For shame.");
-            //return;
-        //}
+            Logger.Log(LogLevel.Info,"ManualHelper_InitFlags","Hey, looks like you tried to InitFlags() while not in a level. For shame.");
+            return;
+        }*/
 
         string[] setFlagsToTrue = [];
         setFlagsToTrue=setFlagsToTrue.Concat(ManualHelperTogglesGrabs).ToArray();
@@ -585,12 +590,18 @@ public class ManualHelper : EverestModule {
 
     private static void EverestEventsLevelOnEnter(Session session, bool isFromData)
     {
+        if (!isFromData)
+        {
+            Session.flagsAlreadySet = new HashSet<string>();
+        }
+
         InitFlags(session);
     }
 
     public static float shakeAmount = 1;
     private static void OnCelestePlayerRender(On.Celeste.Player.orig_Render orig, Player self)
     {
+        
         shakeAmount = ReturnFromBoolToggle("CrumbleBlocks") ? 0 : (self.Ducking ? 0.5f : 1);
 
         Vector2 coolOffset = Vector2.Zero;
@@ -620,6 +631,22 @@ public class ManualHelper : EverestModule {
         if (coolOffset != Vector2.Zero)
         {
             self.Hair.MoveHairBy(-1*coolOffset*tempShakeAmount);
+        }
+    }
+
+    // for the below hook, if set to true, the bounce hitbox of the snowball is forced to kill you too.
+    // TODO: make the Snowballs toggle into a 3-option toggle of Off (Harsh), Off (Lenient), and On
+    public static bool EVILSnowballHitbox = true;
+    // for preventing bounce on Snowballs.
+    private static void OnCelesteSnowballOnPlayerBounce(On.Celeste.Snowball.orig_OnPlayerBounce orig, Snowball self, Player player)
+    {
+        if (ReturnFromBoolToggle("Snowballs"))
+        {
+            orig(self, player);
+        }
+        else if (EVILSnowballHitbox)
+        {
+            self.OnPlayer(player);
         }
     }
 }

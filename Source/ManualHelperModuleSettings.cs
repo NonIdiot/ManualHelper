@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using YamlDotNet.Serialization;
 
@@ -53,6 +54,24 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
             foreach (string item3 in myList3)
             {
                 ManualHelper.Settings.DynamicSettings.Add(item3,[0,3,0]);
+            }
+
+            if (1 == 1) // set to 1==0 if unused. this adds a LOT of entries to the log...
+            {
+                foreach (string item1 in myList1)
+                {
+                    Logger.Log(LogLevel.Info, "ManualHelper_Dummy","| "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item1)+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item1 + "Desc").ReplaceLineEndings("<br/>")+" | Bool | "+item1+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader")+" |");
+                }
+                Logger.Log(LogLevel.Info, "ManualHelper_Dummy", "|.|.|.|.|.|");
+                foreach (string item2 in myList2)
+                {
+                    Logger.Log(LogLevel.Info, "ManualHelper_Dummy","| "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item2)+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item2 + "Desc").ReplaceLineEndings("<br/>")+" | Bool | "+item2+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader")+" |");
+                }
+                Logger.Log(LogLevel.Info, "ManualHelper_Dummy", "|.|.|.|.|.|");
+                foreach (string item3 in myList3)
+                {
+                    Logger.Log(LogLevel.Info, "ManualHelper_Dummy","| "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item3)+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item3 + "Desc").ReplaceLineEndings("<br/>")+" | Bool | "+item3+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader")+" |");
+                }
             }
         }
     }
