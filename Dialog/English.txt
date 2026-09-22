@@ -21,7 +21,7 @@ MODOPTIONS_MANUALHELPER_LeftUncrouchedClimbjumping=
   Left Uncrouched Climbjumping
 MODOPTIONS_MANUALHELPER_LeftCrouchedClimbjumping=
   Left Crouched Climbjumping
-MODOPTIONS_MANUALHELPER_LeftWalljumps=
+MODOPTIONS_MANUALHELPER_LeftWallInteractions=
   Left Non-Grab Wall Interactions
 MODOPTIONS_MANUALHELPER_LeftWallbounces=
   Left Wallbounces
@@ -31,7 +31,7 @@ MODOPTIONS_MANUALHELPER_RightUncrouchedClimbjumping=
   Right Uncrouched Climbjumping
 MODOPTIONS_MANUALHELPER_RightCrouchedClimbjumping=
   Right Crouched Climbjumping
-MODOPTIONS_MANUALHELPER_RightWalljumps=
+MODOPTIONS_MANUALHELPER_RightWallInteractions=
   Right Non-Grab Wall Interactions
 MODOPTIONS_MANUALHELPER_RightWallbounces=
   Right Wallbounces
@@ -42,8 +42,8 @@ MODOPTIONS_MANUALHELPER_LeftUncrouchedClimbjumpingDesc=
   Allows the player to climbjump on left walls while not crouched.
 MODOPTIONS_MANUALHELPER_LeftCrouchedClimbjumpingDesc=
   Allows the player to climbjump on left walls while crouched.
-MODOPTIONS_MANUALHELPER_LeftWalljumpsDesc=
-  Allows the player to walljump, neutral jump, and slide on right walls.
+MODOPTIONS_MANUALHELPER_LeftWallInteractionsDesc=
+  Allows the player to walljump, neutral jump, and slide on left walls.
 MODOPTIONS_MANUALHELPER_LeftWallbouncesDesc=
   Allows the player to wallbounce on left walls.
 MODOPTIONS_MANUALHELPER_RightClingingDesc=
@@ -53,15 +53,41 @@ MODOPTIONS_MANUALHELPER_RightUncrouchedClimbjumpingDesc=
   Allows the player to climbjump on right walls while not crouched.
 MODOPTIONS_MANUALHELPER_RightCrouchedClimbjumpingDesc=
   Allows the player to climbjump on right walls while crouched.
-MODOPTIONS_MANUALHELPER_RightWalljumpsDesc=
+MODOPTIONS_MANUALHELPER_RightWallInteractionsDesc=
   Allows the player to walljump, neutral jump, and slide on right walls.
 MODOPTIONS_MANUALHELPER_RightWallbouncesDesc=
   Allows the player to wallbounce on right walls.
 
 MODOPTIONS_MANUALHELPER_DashTogglesHeader=
   Dash Toggles
+MODOPTIONS_MANUALHELPER_LeftDashlessClinging=
+  Left Dashless Clinging
+MODOPTIONS_MANUALHELPER_LeftDashlessClimbjumping=
+  Left Dashless Climbjumping
+MODOPTIONS_MANUALHELPER_LeftDashlessWalljumps=
+  Left Dashless Walljumps
+MODOPTIONS_MANUALHELPER_RightDashlessClinging=
+  Right Dashless Clinging
+MODOPTIONS_MANUALHELPER_RightDashlessClimbjumping=
+  Right Dashless Climbjumping
+MODOPTIONS_MANUALHELPER_RightDashlessWalljumps=
+  Right Dashless Walljumps
 MODOPTIONS_MANUALHELPER_UsableDashAttack=
   Usable Dash Attack
+MODOPTIONS_MANUALHELPER_LeftDashlessClingingDesc=
+  If disabled, prevents the player grabbing left walls directly when at 0 dashes.
+  (Does not prevent some entities from thinking they are "grabbed".)
+MODOPTIONS_MANUALHELPER_LeftDashlessClimbjumpingDesc=
+  If disabled, climbjumping on left walls costs a dash.
+MODOPTIONS_MANUALHELPER_LeftDashlessWalljumpsDesc=
+  If disabled, walljumping and neutral jumping on left walls costs a dash.
+MODOPTIONS_MANUALHELPER_RightDashlessClingingDesc=
+  If disabled, prevents the player grabbing right walls directly when at 0 dashes.
+  (Does not prevent some entities from thinking they are "grabbed".)
+MODOPTIONS_MANUALHELPER_RightDashlessClimbjumpingDesc=
+  If disabled, climbjumping on right walls costs a dash.
+MODOPTIONS_MANUALHELPER_RightDashlessWalljumpsDesc=
+  If disabled, walljumping and neutral jumping on right walls costs a dash.
 MODOPTIONS_MANUALHELPER_UsableDashAttackDesc=
   If disabled, prevents "DashAttacking" from returning true.
   (Prevents dashing into Crystal Hearts, Breaker Boxes, etc.)

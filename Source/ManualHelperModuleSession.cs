@@ -1,5 +1,9 @@
+using System.Collections.Generic;
+
 namespace Celeste.Mod.ManualHelper;
 
 public class ManualHelperModuleSession : EverestModuleSession {
-    // lowkey just keeping this here in case i need it
+    // flags that havent been set to true yet this session. useful for if someone save/quits a map,
+    // updates the mod, and then continues.
+    public HashSet<string> flagsAlreadySet = new HashSet<string>();
 }
