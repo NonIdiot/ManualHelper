@@ -12,6 +12,10 @@ MODOPTIONS_MANUALHELPER_Off=
   Off
 MODOPTIONS_MANUALHELPER_On=
   On
+MODOPTIONS_MANUALHELPER_OffHarsh=
+  Off (Harsh)
+MODOPTIONS_MANUALHELPER_OffLenient=
+  Off (Lenient)
   
 MODOPTIONS_MANUALHELPER_WallTogglesHeader=
   Wall Toggles
@@ -64,30 +68,46 @@ MODOPTIONS_MANUALHELPER_LeftDashlessClinging=
   Left Dashless Clinging
 MODOPTIONS_MANUALHELPER_LeftDashlessClimbjumping=
   Left Dashless Climbjumping
+MODOPTIONS_MANUALHELPER_LeftClimbjumpingDoesntCostDashes=
+  Left Climbjumping Doesn't Cost Dashes
 MODOPTIONS_MANUALHELPER_LeftDashlessWalljumps=
   Left Dashless Walljumps
+MODOPTIONS_MANUALHELPER_LeftWalljumpsDontCostDashes=
+  Left Walljumps Don't Cost Dashes
 MODOPTIONS_MANUALHELPER_RightDashlessClinging=
   Right Dashless Clinging
 MODOPTIONS_MANUALHELPER_RightDashlessClimbjumping=
   Right Dashless Climbjumping
+MODOPTIONS_MANUALHELPER_RightClimbjumpingDoesntCostDashes=
+  Right Climbjumping Doesn't Cost Dashes
 MODOPTIONS_MANUALHELPER_RightDashlessWalljumps=
   Right Dashless Walljumps
+MODOPTIONS_MANUALHELPER_RightWalljumpsDontCostDashes=
+  Right Walljumps Don't Cost Dashes
 MODOPTIONS_MANUALHELPER_UsableDashAttack=
   Usable Dash Attack
 MODOPTIONS_MANUALHELPER_LeftDashlessClingingDesc=
   If disabled, prevents the player grabbing left walls directly when at 0 dashes.
   (Does not prevent some entities from thinking they are "grabbed".)
 MODOPTIONS_MANUALHELPER_LeftDashlessClimbjumpingDesc=
+  If disabled, climbjumping on left walls cannot be done unless the player has a dash.
+MODOPTIONS_MANUALHELPER_LeftClimbjumpingDoesntCostDashesDesc=
   If disabled, climbjumping on left walls costs a dash.
-MODOPTIONS_MANUALHELPER_LeftDashlessWalljumpsDesc=
+MODOPTIONS_MANUALHELPER_LeftWalljumpsDontCostDashesDesc=
   If disabled, walljumping and neutral jumping on left walls costs a dash.
+MODOPTIONS_MANUALHELPER_LeftDashlessWalljumpsDesc=
+  If disabled, walljumping and neutral jumping on left walls cannot be done unless the player has a dash.
 MODOPTIONS_MANUALHELPER_RightDashlessClingingDesc=
   If disabled, prevents the player grabbing right walls directly when at 0 dashes.
   (Does not prevent some entities from thinking they are "grabbed".)
 MODOPTIONS_MANUALHELPER_RightDashlessClimbjumpingDesc=
+  If disabled, climbjumping on right walls cannot be done unless the player has a dash.
+MODOPTIONS_MANUALHELPER_RightClimbjumpingDoesntCostDashesDesc=
   If disabled, climbjumping on right walls costs a dash.
-MODOPTIONS_MANUALHELPER_RightDashlessWalljumpsDesc=
+MODOPTIONS_MANUALHELPER_RightWalljumpsDontCostDashesDesc=
   If disabled, walljumping and neutral jumping on right walls costs a dash.
+MODOPTIONS_MANUALHELPER_RightDashlessWalljumpsDesc=
+  If disabled, walljumping and neutral jumping on right walls cannot be done unless the player has a dash.
 MODOPTIONS_MANUALHELPER_UsableDashAttackDesc=
   If disabled, prevents "DashAttacking" from returning true.
   (Prevents dashing into Crystal Hearts, Breaker Boxes, etc.)
@@ -103,7 +123,20 @@ MODOPTIONS_MANUALHELPER_CrumbleBlocks=
   Crumble Blocks
 MODOPTIONS_MANUALHELPER_CrumbleBlocksDesc=
   If disabled, grabbing or standing on a Crumble Block instantly crumbles it,
-  prevents jumping, and depletes all dashes.
+  prevents groundjumping, and depletes all dashes.
+MODOPTIONS_MANUALHELPER_Snowballs=
+  Snowballs
+MODOPTIONS_MANUALHELPER_SnowballsDesc=
+  Allows snowballs to be bounced off of.
+  (Harsh also makes the snowball's bounce-on-top-of hitbox deadly as well.)
+MODOPTIONS_MANUALHELPER_OshiroBosses=
+  Oshiro Bosses
+MODOPTIONS_MANUALHELPER_OshiroBossesDesc=
+  Allows Oshiro to be bounced off of.
+  (Harsh also makes Oshiro's bounce-on-top-of hitbox deadly as well.)
+  
+MODOPTIONS_MANUALHELPER_ModdedEntityTogglesHeader=
+  Modded Entity Toggles
   
   
 MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled=
@@ -114,6 +147,10 @@ MODOPTIONS_MANUALHELPER_OpenManualHelperMenu=
   Open ManualHelper Menu
 MODOPTIONS_MANUALHELPER_OpenManualHelperMenuDesc=
   Opens the ManualHelper menu.
+MODOPTIONS_MANUALHELPER_PauseOnDeath=
+  Pause On Death
+MODOPTIONS_MANUALHELPER_PauseOnDeathDesc=
+  When the player dies, automatically pause. (Useful for seeing exactly how the player died.)
   
 MODOPTIONS_MANUALHELPER_ExplainLine1=
   Orange means this Toggle was changed only by the player.
@@ -127,8 +164,17 @@ MODOPTIONS_MANUALHELPER_MiscellaneousHeader=
   
 MODOPTIONS_MANUALHELPER_AllMapDefault=
   Set all (of section) to Map Default
+# note to self, change the below to something like
+#   Set all (of section) to Off
+# (hover description) Sets all values of this submenu to what would be considered "disabled".
+#                     An example would be setting <insert option name> to 0.
 MODOPTIONS_MANUALHELPER_AllOff=
   Set all (of section) to Off
+# note to self, change the below to something like
+#   Set all (of section) to On
+# (hover description) Sets all values of this submenu to what would be considered "on",
+#                     usually just doing what the vanilla value WOULD be.
+#                     An example would be setting <insert option name> to #.
 MODOPTIONS_MANUALHELPER_AllOn=
   Set all (of section) to On
   

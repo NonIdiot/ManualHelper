@@ -4,7 +4,7 @@ ManualHelper Toggles (or Toggles for short) are things that can affect gameplay 
 
 As you may have noticed, this mod's Toggles are quite similar to the variants added by Extended Variant Mode (aka Extended Variants). This is intentional, as the mod is built with those familiar with ExtVar in mind. Not only is the menu system for this mod similar, but so is the Trigger for mappers that allows for changing ManualHelper Toggles. (Hopefully, all variants are compatible with this mod's Toggles, too.)
 
-There are a few types of Toggles. Namely, Bool and Int. Bool are a True/False, and Int are a range of a few numbers (not always integers).
+There are a few types of Toggles. Namely, Bool and Int. Bool are a True/False, and Int are a range of a few numbers (not always integers). There is also the Harsh/Lenient/On type, which has 3 options instead of 2.
 
 The list of Toggles are shown below:
 

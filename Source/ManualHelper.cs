@@ -9,22 +9,51 @@ using MonoMod.RuntimeDetour;
 using ExtendedVariants;
 using Celeste.Mod.CommunalHelper;
 using Celeste.Mod.CommunalHelper.DashStates;
+using Celeste.Mod.CommunalHelper.States;
 using Celeste.Mod.UI;
 using ExtendedVariants.UI;
+using FMOD;
 using FMOD.Studio;
 using MonoMod.ModInterop;
 
 namespace Celeste.Mod.ManualHelper;
 
 public class ManualHelper : EverestModule {
-    public static string[] ManualHelperTogglesGrabs = [
+    // TODO: make the submenus be a Dictionary<int,string[]> where the string[0] is the header, and the int is the order in it (which corresponds to myInt)
+    // TODO: make ALL of these string[]s into one string[][] (or Dictionary<string,string[]> for readability, else label what each one is).
+    public static string[] ManualHelperTogglesBoolGrabs = [
         "LeftClinging","LeftUncrouchedClimbjumping","LeftCrouchedClimbjumping","LeftWallInteractions","LeftWallbounces",
         "RightClinging","RightUncrouchedClimbjumping","RightCrouchedClimbjumping","RightWallInteractions","RightWallbounces"];
-    public static string[] ManualHelperTogglesDashes = [
-        "LeftDashlessClinging","LeftDashlessClimbjumping","LeftDashlessWalljumps",
-        "RightDashlessClinging","RightDashlessClimbjumping","RightDashlessWalljumps",
+    public static string[] ManualHelperTogglesBoolDashes = [
+        "LeftDashlessClinging","LeftDashlessClimbjumping","LeftClimbjumpingDoesntCostDashes","LeftDashlessWalljumps","LeftWalljumpsDontCostDashes",
+        "RightDashlessClinging","RightDashlessClimbjumping","RightClimbjumpingDoesntCostDashes","RightDashlessWalljumps","RightWalljumpsDontCostDashes",
         "UsableDashAttack"];
-    public static string[] ManualHelperTogglesVanillaEntities = ["HeartDoors","CrumbleBlocks","Snowballs"];
+    public static string[] ManualHelperTogglesBoolStamina = [
+        ];
+    public static string[] ManualHelperTogglesBoolVanillaEntities = [
+        "HeartDoors","NonWoodenDoors","WoodenDoors"];
+    public static string[] ManualHelperTogglesHarshLenientOnVanillaEntities = [
+        "CrumbleBlocks","Snowballs","OshiroBosses"];
+    public static string[] ManualHelperTogglesBoolModdedEntities = [
+        "ForceDisableElytra"];
+    
+    // formatted with the key being the option string above, and the int[] being [<default value>, <value that should be "disabled">].
+    // to note, 0 isnt available for these, as that is what the "error code" and/or MapDefault is. See level.Session.GetCounter for why its an "error code".
+    public static Dictionary<string, int[]> ManualHelperNonBoolToggleToInt = new Dictionary<string, int[]>();
+    public static void resetNonBoolToggleToInt()
+    {
+        ManualHelperNonBoolToggleToInt = new Dictionary<string, int[]>();
+        // the HarshLenientOn should always be [3,1], as Option 1 (Harsh) is the "disabled" option, and Option 3 (On) is the "on" option.
+        foreach (string harshLenientOnString in ManualHelperTogglesHarshLenientOnVanillaEntities)
+        {
+            if (!ManualHelperNonBoolToggleToInt.ContainsKey(harshLenientOnString))
+            {
+                ManualHelperNonBoolToggleToInt.Add(harshLenientOnString, [3,1]);
+            }
+        }
+        //ManualHelperNonBoolToggleToInt.Add("Snowballs", [3,1]);
+        //ManualHelperNonBoolToggleToInt.Add("OshiroBosses", [3,1]);
+    }
 
     // in order: Changed By Player color, Changed By Map color, Changed By Player/Map color, Not Changed By Either color, Disabled color, Error color
     public static Color[] ManualHelperAllMenuColors = [Color.Goldenrod,Color.DeepSkyBlue,Color.DeepPink,Color.White,Color.DarkSlateGray,Color.Red];
@@ -32,6 +61,7 @@ public class ManualHelper : EverestModule {
     public static ManualHelper Instance { get; private set; }
     public override Type SettingsType => typeof(ManualHelperModuleSettings);
     public static ManualHelperModuleSettings Settings => (ManualHelperModuleSettings) Instance._Settings;
+    public static bool DynamicSettingsSet = false;
     public override Type SessionType => typeof(ManualHelperModuleSession);
     public static ManualHelperModuleSession Session => (ManualHelperModuleSession) Instance._Session;
     public override Type SaveDataType => typeof(ManualHelperModuleSaveData);
@@ -50,30 +80,40 @@ public class ManualHelper : EverestModule {
 
     private static Hook dashAttackingHook;
     private static Hook heartDoorHook;
+    private static Hook communalHelperElytraHook;
     private static bool isRenderingCode = false;
     public static bool communalHelperLoaded;
     public EverestModuleMetadata communalHelper;
-    public override void Load() {
+    public override void Load()
+    {
+        resetNonBoolToggleToInt();
         // dependencies and such
         communalHelper = new() {
             Name = "CommunalHelper",
             Version = new Version(1, 2 ,0)
         };
-
         communalHelperLoaded = Everest.Loader.DependencyLoaded(communalHelper);
         if (communalHelperLoaded)
         {
             typeof(CommunalHelperImports).ModInterop();
         }
+        
         // apply any hooks that should always be active
         dashAttackingHook = new Hook(
             typeof(Player).GetMethod("get_DashAttacking"),
             typeof(ManualHelper).GetMethod("weirdHookCelestePlayerGetDashAttacking", BindingFlags.NonPublic | BindingFlags.Static)
         );
         heartDoorHook = new Hook(
-            typeof(HeartGemDoor).GetMethod("get_Counter"),
-            typeof(ManualHelper).GetMethod("weirdHookCelesteHeartGemDoorSetCounter", BindingFlags.NonPublic | BindingFlags.Static)
+            typeof(HeartGemDoor).GetMethod("get_HeartGems"),
+            typeof(ManualHelper).GetMethod("weirdHookCelesteHeartGemDoorSetHeartGems", BindingFlags.NonPublic | BindingFlags.Static)
         );
+        if (communalHelperLoaded)
+        {
+            /*communalHelperElytraHook = new Hook(
+                typeof(StateMachine).GetMethod("get_State"),
+                typeof(ManualHelper).GetMethod("weirdHookCommunalHelperGetElytraCooldown", BindingFlags.NonPublic | BindingFlags.Static)
+            );*/
+        }
         On.Celeste.Player.ClimbCheck += OnCelestePlayerClimbCheck;
         On.Celeste.Player.ClimbJump += OnCelestePlayerClimbJump;
         On.Celeste.Player.WallJump += OnCelestePlayerWallJump;
@@ -84,10 +124,16 @@ public class ManualHelper : EverestModule {
         Everest.Events.Level.OnCreatePauseMenuButtons += EverestEventsLevelOnCreatePauseMenuButtons;
         On.Celeste.Solid.GetPlayerOnTop += OnCelesteSolidGetPlayerOnTop;
         On.Celeste.Solid.GetPlayerClimbing += OnCelesteSolidGetPlayerClimbing;
-        Everest.Events.Level.OnEnter += EverestEventsLevelOnEnter;
+        Everest.Events.Level.OnLoadLevel += EverestEventsLevelLoaderOnLoadLevel;
         On.Celeste.Player.Render += OnCelestePlayerRender;
         On.Celeste.Player.UpdateHair += OnCelestePlayerUpdateHair;
         On.Celeste.Snowball.OnPlayerBounce += OnCelesteSnowballOnPlayerBounce;
+        On.Celeste.AngryOshiro.OnPlayerBounce += OnCelesteAngryOshiroOnPlayerBounce;
+        On.Celeste.TextMenuExt.SubHeaderExt.Render += OnCelesteTextMenuExtSubHeaderExtRender;
+        On.Celeste.Player.Die += OnCelestePlayerDie;
+        On.Celeste.HeartGemDoor.DrawEdges += OnCelesteHeartGemDoorDrawEdges;
+        On.Celeste.Door.Open += OnCelesteDoorOpen;
+        On.Celeste.Door.Update += OnCelesteDoorUpdate;
     }
 
     public override void Unload() {
@@ -96,6 +142,11 @@ public class ManualHelper : EverestModule {
         dashAttackingHook = null;
         heartDoorHook.Dispose();
         heartDoorHook = null;
+        if (communalHelperElytraHook != null)
+        {
+            communalHelperElytraHook.Dispose();
+            communalHelperElytraHook = null;
+        }
         On.Celeste.Player.ClimbCheck -= OnCelestePlayerClimbCheck;
         On.Celeste.Player.ClimbJump -= OnCelestePlayerClimbJump;
         On.Celeste.Player.WallJump -= OnCelestePlayerWallJump;
@@ -106,23 +157,39 @@ public class ManualHelper : EverestModule {
         Everest.Events.Level.OnCreatePauseMenuButtons -= EverestEventsLevelOnCreatePauseMenuButtons;
         On.Celeste.Solid.GetPlayerOnTop -= OnCelesteSolidGetPlayerOnTop;
         On.Celeste.Solid.GetPlayerClimbing -= OnCelesteSolidGetPlayerClimbing;
-        Everest.Events.Level.OnEnter -= EverestEventsLevelOnEnter;
+        Everest.Events.Level.OnLoadLevel -= EverestEventsLevelLoaderOnLoadLevel;
         On.Celeste.Player.Render -= OnCelestePlayerRender;
         On.Celeste.Player.UpdateHair -= OnCelestePlayerUpdateHair;
         On.Celeste.Snowball.OnPlayerBounce -= OnCelesteSnowballOnPlayerBounce;
+        On.Celeste.AngryOshiro.OnPlayerBounce -= OnCelesteAngryOshiroOnPlayerBounce;
+        On.Celeste.TextMenuExt.SubHeaderExt.Render -= OnCelesteTextMenuExtSubHeaderExtRender;
+        On.Celeste.Player.Die -= OnCelestePlayerDie;
+        On.Celeste.HeartGemDoor.DrawEdges -= OnCelesteHeartGemDoorDrawEdges;
+        On.Celeste.Door.Open -= OnCelesteDoorOpen;
+        On.Celeste.Door.Update -= OnCelesteDoorUpdate;
     }
 
     [ModImportName("CommunalHelper.DashStates")]
     public static class CommunalHelperImports
     {
         public static Func<bool> HasDreamTunnelDash;
+
+        public static Func<int> GetDreamTunnelDashState;
     }
 
     public static void MakeModMenu(Level level, string text)
     {
         TextMenu modMenu = OuiModOptions.CreateMenu(true, (EventInstance) null!);
-        
 
+        Action startSearching = OuiModOptions.AddSearchBox(modMenu);
+
+        modMenu.OnUpdate = () => {
+            if (modMenu.Focused) {
+                //if (CoreModule.Settings.MenuSearch.Pressed) {
+                //    startSearching();
+                //}
+            }
+        };
         Action closeMenu = (() =>
         {
             Audio.Play("event:/ui/main/button_back");
@@ -148,6 +215,17 @@ public class ManualHelper : EverestModule {
         return;
     }
 
+    public void DescriptionFixes(TextMenuExt.SubMenu fixedMenu)
+    {
+        foreach (TextMenu.Item item in fixedMenu.Items)
+        {
+            if (item is TextMenuExt.EaseInSubHeaderExt)
+            {
+                //(item as TextMenuExt.EaseInSubHeaderExt).Offset.X = 20;
+            }
+        }
+    }
+
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance pauseSnapshot)
     {
         Settings.InitializeDynamicSettings();
@@ -159,18 +237,27 @@ public class ManualHelper : EverestModule {
         
         // major submenus
         TextMenuExt.SubMenu myMenu1 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu1,inGame);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu1,inGame,menu);
         menu.Add(myMenu1);
         TextMenuExt.SubMenu myMenu2 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu2,inGame);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu2,inGame,menu);
         menu.Add(myMenu2);
         TextMenuExt.SubMenu myMenu3 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu3,inGame);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu3,inGame,menu);
         menu.Add(myMenu3);
+        TextMenuExt.SubMenu myMenu4 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_ModdedEntityTogglesHeader"), false);
+        Settings.SettingsMenu1.CreateDummy1Entry(myMenu4,inGame,menu);
+        menu.Add(myMenu4);
         
         // misc
-        menu.Add(new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled"), Settings.PauseMenuButtonEnabled)
-            .Change(v => Settings.PauseMenuButtonEnabled = v));
+        TextMenu.Option<bool> myButton1 = new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled"), Settings.PauseMenuButtonEnabled)
+            .Change(v => Settings.PauseMenuButtonEnabled = v);
+        menu.Add(myButton1);
+        myButton1.AddDescription(menu, Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabledDesc"));
+        TextMenu.Option<bool> myButton2 = new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseOnDeath"), Settings.PauseOnDeath)
+            .Change(v => Settings.PauseOnDeath = v);
+        menu.Add(myButton2);
+        myButton2.AddDescription(menu, Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseOnDeathDesc"));
         // the keybind uh. somehow is still there. idk why i dont need to add it here lmao
         
         CreateModMenuSectionKeyBindings(menu, inGame, pauseSnapshot);
@@ -210,7 +297,9 @@ public class ManualHelper : EverestModule {
     // tools
     public static int GetToggleData(string whichOne)
     {
-        // returns 0 if Map Default, 1 if Off, and 2 if On
+        // returns whatever the number is for that settings entry in DynamicSettings.
+        // for bool toggles this is 0 if Map Default, 1 if Off, and 2 if On
+        // otherwise, 0 is Map Default and 1+ is whatever the value is.
 
         if (Settings.DynamicSettings.ContainsKey(whichOne))
         {
@@ -286,14 +375,8 @@ public class ManualHelper : EverestModule {
 
 
         // but like, return -1 if the option is not found
-        Logger.Log(nameof(ManualHelper),"[Error NonIdiot000] Hey twin, option "+whichOne+" isn't a valid ManualHelper Option. Seems like a skill issue.");
+        Logger.Log(LogLevel.Error,nameof(ManualHelper),"[Error NonIdiot000] Hey twin, option "+whichOne+" isn't a valid ManualHelper Option. Seems like a skill issue.");
         return -1;
-    }
-
-    // true is left
-    public static bool CanLRInteract(Player self, bool dir, string name)
-    {
-        return dir ? ReturnFromBoolToggle("Left"+name) : ReturnFromBoolToggle("Right"+name);
     }
 
     public static bool ReturnFromBoolToggle(string whichOne)
@@ -308,14 +391,37 @@ public class ManualHelper : EverestModule {
         // if the given option is Map Default, look at map's flags instead of config
         if (myOption == 0)
         {
-            // TODO: insert flags stuff here later once that's implemented
-            //return true;
             return GetFlag("ManualHelper/ToggleBool_"+whichOne) == 1;
         }
         // otherwise return bool of if the given option is On
         return myOption == 2;
     }
+
+    public static int ReturnFromCounterToggle(string whichOne)
+    {
+        int myOption = GetToggleData(whichOne);
+        // if the given option is not found, return false
+        if (myOption == -1)
+        {
+            Logger.Log(LogLevel.Error,nameof(ManualHelper),"[Error NonIdiot002] Yo nerd, whatever "+whichOne+" is, it ain't a ManualHelper Counter Toggle.");
+            return -1;
+        }
+        // if the given option is Map Default, look at map's counters instead of config
+        if (myOption == 0)
+        {
+            return GetCounter("ManualHelper/ToggleCounter_"+whichOne);
+        }
+        // otherwise return whatever the counter says
+        return myOption;
+    }
+
+    // true is left
+    public static bool CanLRInteract(Player self, bool dir, string name)
+    {
+        return dir ? ReturnFromBoolToggle("Left"+name) : ReturnFromBoolToggle("Right"+name);
+    }
     
+    // note that for flags, they are only used for 2-answer entries. the base format is "ManualHelper/ToggleBool_<togglename>", and 1 means unset by map and 0 means set by map.
     public static int GetFlag(string flagName)
     {
         //thank u snip/tart1998 for the help
@@ -324,6 +430,17 @@ public class ManualHelper : EverestModule {
             return -1;
 
         return level.Session.GetFlag(flagName) ? 1 : 0;
+    }
+    
+    // note that for counters, they are used everything but 2-answer entries. the base format is "ManualHelper/ToggleBool_<togglename>", and 0 means unset by map and any other positive option means set by map.
+    public static int GetCounter(string counterName)
+    {
+        //thank u snip/tart1998 for the help
+        if (Engine.Scene is not Level level)
+            // handle case when you're not in a level
+            return -1;
+
+        return level.Session.GetCounter(counterName);
     }
 
     public static void SetFlag(string flagName, bool setTo)
@@ -335,7 +452,7 @@ public class ManualHelper : EverestModule {
         level.Session.SetFlag(flagName,setTo);
     }
 
-    public static void InitFlags(Session session)
+    public static void InitFlags(Level level)
     {
         // this breaks things sometimes. for some reason. idk
         /*if (Engine.Scene is not Level level)
@@ -346,17 +463,43 @@ public class ManualHelper : EverestModule {
         }*/
 
         string[] setFlagsToTrue = [];
-        setFlagsToTrue=setFlagsToTrue.Concat(ManualHelperTogglesGrabs).ToArray();
-        setFlagsToTrue=setFlagsToTrue.Concat(ManualHelperTogglesDashes).ToArray();
-        setFlagsToTrue=setFlagsToTrue.Concat(ManualHelperTogglesVanillaEntities).ToArray();
+        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolGrabs).ToArray();
+        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolDashes).ToArray();
+        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolVanillaEntities).ToArray();
+        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolModdedEntities).ToArray();
         foreach (string flagName in setFlagsToTrue)
         {
             if (!Session.flagsAlreadySet.Contains("ManualHelper/ToggleBool_"+flagName))
             {
-                session.SetFlag("ManualHelper/ToggleBool_"+flagName,true);
+                level.Session.SetFlag("ManualHelper/ToggleBool_"+flagName,true);
                 Session.flagsAlreadySet.Add("ManualHelper/ToggleBool_"+flagName);
             }
         }
+
+        string[] setCountersToDefault = [];
+        setCountersToDefault=setFlagsToTrue.Concat(ManualHelperTogglesHarshLenientOnVanillaEntities).ToArray();
+        foreach (string counterName in setCountersToDefault)
+        {
+            if (!Session.countersAlreadySet.Contains("ManualHelper/ToggleCounter_"+counterName) && ManualHelperNonBoolToggleToInt.TryGetValue(counterName, out int[] toIntIfied))
+            {
+                level.Session.SetCounter("ManualHelper/ToggleCounter_"+counterName,toIntIfied[0]);
+                Session.countersAlreadySet.Add("ManualHelper/ToggleCounter_"+counterName);
+            }
+        }
+    }
+
+    public static void RetractDash(Player self)
+    {
+        if (self.Dashes > 0)
+        {
+            self.Dashes -= 1;
+        }
+    }
+
+    public static bool HasDoorOfType(Door myDoor)
+    {
+        return (ReturnFromBoolToggle("NonWoodenDoors") && myDoor.openSfx != "event:/game/03_resort/door_wood_open") ||
+               (ReturnFromBoolToggle("WoodenDoors") && myDoor.openSfx == "event:/game/03_resort/door_wood_open");
     }
 
     // hooks
@@ -384,9 +527,14 @@ public class ManualHelper : EverestModule {
             || self.level.InCredits)
         {
             orig(self);
-            if (!CanLRInteract(self, self.Facing == Facings.Left, "DashlessClimbjumping"))
+            if (!CanLRInteract(self, self.Facing == Facings.Left, "ClimbjumpingDoesntCostDashes"))
             {
-                self.Dashes -= 1;
+                if (self.Dashes > 0)
+                {
+                    Audio.Play("event:/char/madeline/jump_dreamblock",self.Position);
+                }
+                //self.Dashes -= 1;
+                RetractDash(self);
             }
         }
         else //if (CanWallInteract(self, self.Facing == Facings.Right))
@@ -418,12 +566,22 @@ public class ManualHelper : EverestModule {
                 doOrig = true;
             }
         }
+        else if (self.StateMachine.State == 1)
+        {
+            self.moveX = -dir;
+            doOrig = true;
+        }
         if (doOrig)
         {
             orig(self, dir);
-            if (!CanLRInteract(self, dir == 1, "DashlessWalljumps"))
+            if (!CanLRInteract(self, dir == 1, "WalljumpsDontCostDashes"))
             {
-                self.Dashes -= 1;
+                if (self.Dashes > 0)
+                {
+                    Audio.Play("event:/char/madeline/jump_dreamblock",self.Position);
+                }
+                //self.Dashes -= 1;
+                RetractDash(self);
             }
         }
     }
@@ -450,6 +608,7 @@ public class ManualHelper : EverestModule {
             // only do below line if you cant figure out how to prevent it from acting like a regular freakin updash
             //self.Speed.Y = 0;
             self.Speed.Y /= 2;
+            Audio.Play("event:/char/madeline/core_hair_charged",self.Position);//,"volume",2
         }
     }
 
@@ -484,20 +643,28 @@ public class ManualHelper : EverestModule {
     // Prevents heart door from being instantialized as already opened (I think, probably doesn't work for modded Gem Doors)
     private static void OnCelesteHeartGemDoorAdded(On.Celeste.HeartGemDoor.orig_Added orig, HeartGemDoor self, Scene scene)
     {
-        (scene as Level).Session.SetFlag("opened_heartgem_door_" + self.Requires, false);
+        if (!ReturnFromBoolToggle("HeartDoors"))
+        {
+            (scene as Level).Session.SetFlag("opened_heartgem_door_" + self.Requires, false);
+            self.Opened = false;
+            self.Visible = true;
+            self.openPercent = 1f;
+            self.startHidden = false;
+        }
+
         orig(self, scene);
     }
 
     // Prevents heart door from opening
     // ReSharper disable once UnusedMember.Local
-    private static float weirdHookCelesteHeartGemDoorSetCounter(Func<HeartGemDoor, float> orig, HeartGemDoor self) {
+    private static int weirdHookCelesteHeartGemDoorSetHeartGems(Func<HeartGemDoor, int> orig, HeartGemDoor self) {
         if (!ReturnFromBoolToggle("HeartDoors")) {
-            return 0f;
+            return 0;
         }
 
         return orig(self);
     }
-
+    
     // pause menu button function.
     private void EverestEventsLevelOnCreatePauseMenuButtons(Level level, TextMenu menu, bool minimal)
     {
@@ -539,15 +706,19 @@ public class ManualHelper : EverestModule {
     {
         if (self is CrumblePlatform)
         {
-            if (!ReturnFromBoolToggle("CrumbleBlocks"))
+            if (ReturnFromCounterToggle("CrumbleBlocks") != 3)
             {
                 if (self.Collidable)
                 {
                     if (orig(self) != null)
                     {
+                        Audio.Play("event:/game/general/assist_nonsolid_out",self.Position);
                         self.Collidable = false;
                         Player realSelf = orig(self);
-                        realSelf.Dashes = 0;
+                        if (ReturnFromCounterToggle("CrumbleBlocks") == 1)
+                        {
+                            realSelf.Dashes = 0;
+                        }
                         return realSelf;
                     }
                 }
@@ -566,15 +737,19 @@ public class ManualHelper : EverestModule {
     {
         if (self is CrumblePlatform)
         {
-            if (!ReturnFromBoolToggle("CrumbleBlocks"))
+            if (ReturnFromCounterToggle("CrumbleBlocks") != 3)
             {
                 if (self.Collidable)
                 {
                     if (orig(self) != null)
                     {
+                        Audio.Play("event:/game/general/assist_nonsolid_out",self.Position);
                         self.Collidable = false;
                         Player realSelf = orig(self);
-                        realSelf.Dashes = 0;
+                        if (ReturnFromCounterToggle("CrumbleBlocks") == 1)
+                        {
+                            realSelf.Dashes = 0;
+                        }
                         return realSelf;
                     }
                 }
@@ -588,21 +763,23 @@ public class ManualHelper : EverestModule {
         return orig(self);
     }
 
-    private static void EverestEventsLevelOnEnter(Session session, bool isFromData)
+    // flag initialization hook. probably the least stable thing in this mod for some reason?????
+    private static void EverestEventsLevelLoaderOnLoadLevel(Level level, Player.IntroTypes introType, bool isFromData)
     {
+        //Logger.Log(LogLevel.Info,"ManualHelper_OnLoadLevel","OnLoadLevel called! isFromData: "+isFromData);
         if (!isFromData)
         {
             Session.flagsAlreadySet = new HashSet<string>();
         }
 
-        InitFlags(session);
+        InitFlags(level);
     }
 
     public static float shakeAmount = 1;
     private static void OnCelestePlayerRender(On.Celeste.Player.orig_Render orig, Player self)
     {
         
-        shakeAmount = ReturnFromBoolToggle("CrumbleBlocks") ? 0 : (self.Ducking ? 0.5f : 1);
+        shakeAmount = ReturnFromCounterToggle("CrumbleBlocks") == 3 ? 0 : (self.Ducking ? 0.5f : 1);
 
         Vector2 coolOffset = Vector2.Zero;
         float tempShakeAmount = shakeAmount + 0;
@@ -634,19 +811,164 @@ public class ManualHelper : EverestModule {
         }
     }
 
-    // for the below hook, if set to true, the bounce hitbox of the snowball is forced to kill you too.
-    // TODO: make the Snowballs toggle into a 3-option toggle of Off (Harsh), Off (Lenient), and On
-    public static bool EVILSnowballHitbox = true;
     // for preventing bounce on Snowballs.
     private static void OnCelesteSnowballOnPlayerBounce(On.Celeste.Snowball.orig_OnPlayerBounce orig, Snowball self, Player player)
     {
-        if (ReturnFromBoolToggle("Snowballs"))
+        if (ReturnFromCounterToggle("Snowballs") == 3)
         {
             orig(self, player);
         }
-        else if (EVILSnowballHitbox)
+        else if (ReturnFromCounterToggle("Snowballs") == 1)
         {
             self.OnPlayer(player);
+        }
+    }
+    
+    // for preventing bounce on Oshiro Bosses.
+    private static void OnCelesteAngryOshiroOnPlayerBounce(On.Celeste.AngryOshiro.orig_OnPlayerBounce orig, AngryOshiro self, Player player)
+    {
+        if (ReturnFromCounterToggle("OshiroBosses") == 3)
+        {
+            orig(self, player);
+        }
+        else if (ReturnFromCounterToggle("OshiroBosses") == 1)
+        {
+            self.OnPlayer(player);
+        }
+    }
+
+    // makes the submenu subheaders move correctly. if you see "nonidiotplaceholder_" at the start of a title, thats really bad.
+    private static void OnCelesteTextMenuExtSubHeaderExtRender(On.Celeste.TextMenuExt.SubHeaderExt.orig_Render orig, TextMenuExt.SubHeaderExt self, Vector2 position, bool highlighted)
+    {
+        if (self.Title.StartsWith("nonidiotplaceholder_"))
+        {
+            self.Title=self.Title.Substring("nonidiotplaceholder_".Length);
+            orig(self, new Vector2(position.X+50,position.Y), highlighted);
+            self.Title = "nonidiotplaceholder_" + self.Title;
+        }
+        else
+        {
+            orig(self, position, highlighted);    
+        }
+    }
+
+    // pause on death
+    private static PlayerDeadBody OnCelestePlayerDie(On.Celeste.Player.orig_Die orig, Player self, Vector2 direction, bool evenIfInvincible, bool registerDeathInStats)
+    {
+        if (self.level != null && Settings.PauseOnDeath)
+        {
+            self.level.Pause();
+        }
+
+        return orig(self, direction,evenIfInvincible, registerDeathInStats);
+    }
+
+    // drawing the heart gem door but evil
+    private static void OnCelesteHeartGemDoorDrawEdges(On.Celeste.HeartGemDoor.orig_DrawEdges orig, HeartGemDoor self, Rectangle bounds, Color color)
+    {
+        if (!ReturnFromBoolToggle("HeartDoors")) {
+            orig(self, bounds, new Color((int)(Math.Sin((float)Engine.FrameCounter/10f)*127)+127, 0, 0));
+        }
+        else
+        {
+            orig(self, bounds, color);
+        }
+    }
+
+    // making the doors not open lmao
+    private static void OnCelesteDoorOpen(On.Celeste.Door.orig_Open orig, Door self, float myFloat)
+    {
+        if (HasDoorOfType(self))
+        {
+            orig(self,myFloat);
+            //self.disabled = false;
+        }
+        else
+        {
+            self.disabled = true;
+        }
+    }
+
+    // also more door stuff
+    private static void OnCelesteDoorUpdate(On.Celeste.Door.orig_Update orig, Door self)
+    {
+        orig(self);
+        // only adds to scene if doors is not enabled, to save on computation when Doors hasnt been modified yet
+        if (!HasDoorOfType(self) && Engine.Scene is Level level)
+        {
+            bool wasBroken = false;
+            foreach (DoorCollider entity in Engine.Scene.Tracker.GetEntities<DoorCollider>())//Entity entity in level.Entities
+            {
+                if (((DoorCollider)entity).myDoor == self)//entity is DoorCollider && 
+                {
+                    wasBroken = true;
+                    break;
+                }
+            }
+            if (!wasBroken)
+            {
+                level.Add(new DoorCollider(self,self.Position-new Vector2(0,24),2,24));
+            }
+        }
+    }
+    
+    // door collider stuff, not technically a hook but eh
+    [Tracked]
+    public class DoorCollider : Solid
+    {
+        public DoorCollider(Door myDoor, Vector2 position, float width, float height)
+            : base(position, width, height, true)
+        {
+            this.myDoor = myDoor;
+            //position = myDoor.Position;
+            //width = 2;
+            //height = 24;
+            //Engine.Commands.Log("Door position: "+myDoor.Position+", my position: "+position);
+            wasEvil = true;
+        }
+
+        public override void Update()
+        {
+            if (myDoor == null)
+            {
+                base.Remove();
+            }
+            else
+            {
+                base.Update();
+                if (HasDoorOfType(myDoor))
+                {
+                    this.Collidable = false;
+                    if (wasEvil)
+                    {
+                        wasEvil = false;
+                        myDoor.disabled = false;
+                    }
+                }
+                else
+                {
+                    this.Collidable = true;
+                    wasEvil = true;
+                }
+            }
+        }
+
+        public Door myDoor;
+
+        public bool wasEvil = false;
+    }
+    
+    
+    // Prevents heart door from opening
+    // ReSharper disable once UnusedMember.Local
+    private static int weirdHookCommunalHelperGetElytraCooldown(Func<StateMachine, int> orig, StateMachine self) {
+        int dreamTunnelState = CommunalHelperImports.GetDreamTunnelDashState?.Invoke() ?? -999;
+        if (self.Entity is Player && !ReturnFromBoolToggle("ForceDisableElytra") && dreamTunnelState+1 == self.State) {
+            return 0;
+        }
+        else
+        {
+            return orig(self);
         }
     }
 }

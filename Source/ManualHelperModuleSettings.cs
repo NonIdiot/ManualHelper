@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
+using Monocle;
 using YamlDotNet.Serialization;
 
 namespace Celeste.Mod.ManualHelper;
@@ -10,50 +11,61 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
     
     // settings
     
-    // TODO: fix this not actually saving due to the new custom Grandmaster settings
     public Dictionary<string, int[]> DynamicSettings { get; set; } = new();
-    public bool DynamicSettingsSet = false;
 
     public void InitializeDynamicSettings()
     {
-        if (!ManualHelper.Settings.DynamicSettingsSet)
+        if (!ManualHelper.DynamicSettingsSet)
         {
-            ManualHelper.Settings.DynamicSettingsSet = true;
+            Logger.Log(LogLevel.Info, "ManualHelper_InitializeDynamicSettings","Initializing Dynamic Settings!");
+            ManualHelper.DynamicSettingsSet = true;
             
             ManualHelper.Settings.DynamicSettings = new Dictionary<string, int[]>();
             // for the buttons at the top of each subsection
-            for (int a = 1; a <= 3; a++)
+            for (int a = 1; a <= 4; a++)
             {
                 // for buttons, the <current value> is instead what it should set non-buttons to.
                 ManualHelper.Settings.DynamicSettings.Add("AllMapDefault_"+a,[0,a,2]);
                 ManualHelper.Settings.DynamicSettings.Add("AllOff_"+a,[1,a,2]);
                 ManualHelper.Settings.DynamicSettings.Add("AllOn_"+a,[2,a,2]);
                 // logging
-                ManualHelper.Settings.DynamicSettings.TryGetValue("AllOn_" + a, out int[] valuu);
-                Logger.Log(LogLevel.Info,"ManualHelper_Dummy","a"+valuu[0]+" "+valuu[1]+" "+valuu.Length+" "+valuu);
+                //ManualHelper.Settings.DynamicSettings.TryGetValue("AllOn_" + a, out int[] valuu);
+                //Logger.Log(LogLevel.Info,"ManualHelper_Dummy","a"+valuu[0]+" "+valuu[1]+" "+valuu.Length+" "+valuu);
             }
 
-            string[] myList1 = ManualHelper.ManualHelperTogglesGrabs;
+            string[] myList1 = ManualHelper.ManualHelperTogglesBoolGrabs;
             foreach (string item1 in myList1)
             {
                 //if (item1 != "LeftClinging")
                 //{
                     // format is <current value>, <submenu it should go in>, <type of setting>.
-                    // <current value> is default 0, and set to a new value when changed in Slider form.
-                    // <submenu it should go in> is self-explanatory and easy to figure out.
-                    // <type of setting> is 0 if MapSetting/Off/On, 1 if MapSetting/0/, 2 if button,
+                    // <current value> is default 0, and set to a new value when changed in Slider form. dont set this to anything other than 0 when doing .Add().
+                    // <submenu it should go in> is self-explanatory and easy to figure out. search "int myInt = " if ur not sure tho
+                    // <type of setting> is 0 if MapSetting/Off/On, 1 if MapSetting/OffHarsh/OffLenient/On, 2 if button,
                     ManualHelper.Settings.DynamicSettings.Add(item1,[0,1,0]);
                 //}
             }
-            string[] myList2 = ManualHelper.ManualHelperTogglesDashes;
+            string[] myList2 = ManualHelper.ManualHelperTogglesBoolDashes;
             foreach (string item2 in myList2)
             {
                 ManualHelper.Settings.DynamicSettings.Add(item2,[0,2,0]);
             }
-            string[] myList3 = ManualHelper.ManualHelperTogglesVanillaEntities;
+            string[] myList3 = ManualHelper.ManualHelperTogglesBoolVanillaEntities;
             foreach (string item3 in myList3)
             {
                 ManualHelper.Settings.DynamicSettings.Add(item3,[0,3,0]);
+            }
+            string[] myList4 = ManualHelper.ManualHelperTogglesHarshLenientOnVanillaEntities;
+            foreach (string item4 in myList4)
+            {
+                // second value is cause its still in the Vanilla Entities tab.
+                // third value is cause its the Harsh/Lenient one instead of regular On/Off.
+                ManualHelper.Settings.DynamicSettings.Add(item4,[0,3,1]);
+            }
+            string[] myList5 = ManualHelper.ManualHelperTogglesBoolModdedEntities;
+            foreach (string item5 in myList5)
+            {
+                ManualHelper.Settings.DynamicSettings.Add(item5,[0,4,0]);
             }
 
             if (1 == 1) // set to 1==0 if unused. this adds a LOT of entries to the log...
@@ -71,6 +83,10 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                 foreach (string item3 in myList3)
                 {
                     Logger.Log(LogLevel.Info, "ManualHelper_Dummy","| "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item3)+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item3 + "Desc").ReplaceLineEndings("<br/>")+" | Bool | "+item3+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader")+" |");
+                }
+                foreach (string item4 in myList4)
+                {
+                    Logger.Log(LogLevel.Info, "ManualHelper_Dummy","| "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item4)+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + item4 + "Desc").ReplaceLineEndings("<br/>")+" | Harsh/Lenient/On | "+item4+" | "+Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader")+" |");
                 }
             }
         }
@@ -92,14 +108,21 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
         [YamlIgnore]
         public bool Dummy1 { get; set; }
 
+        // this is for the items that dynamicsettings uses. its literally only used for the TurnAllOfSectionInto function
         public static Dictionary<string, TextMenu.Item> DynamicSettingItems = new();
 
-        Func<int, string> MapDefaultOrElse = (i) =>
+        Func<int, string> MapDefaultOrElseBool = (i) =>
         {
             return
                 i == 0 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_MapDefault") : (i == 1 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_Off") : Dialog.Clean("MODOPTIONS_MANUALHELPER_On"));
         };
+        Func<int, string> MapDefaultOrElseHarshLenientOn = (i) =>
+        {
+            return
+                i == 0 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_MapDefault") : (i == 1 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_OffHarsh") : (i == 2 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_OffLenient") : Dialog.Clean("MODOPTIONS_MANUALHELPER_On")));
+        };
 
+        // these two ints and two functions are for the buttons that set all of a submenu to a single value.
         public int TurnAllVarSection = -1;
         public int TurnAllVarResulte = -1;
         public void TurnAllOfSectionInto()
@@ -110,18 +133,38 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                 {
                     if (myItem is TextMenu.Slider)
                     {
-                        // be sure that once more-than-2 options are added, that they are accounted for here too
-                        ((TextMenu.Slider)myItem).Index = TurnAllVarResulte;
-                        ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
+                        // be sure that once more-than-3 options are added, that they are accounted for here too
+                        // this if statement is basically "if its an on/off, OR this is the "Map Default" button, set it all to the given button value."
+                        if (value[2] == 0 || TurnAllVarResulte == 0)
+                        {
+                            ((TextMenu.Slider)myItem).Index = TurnAllVarResulte;
+                            ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
+                        }
+                        else if (value[2] == 1 && ManualHelper.ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied))
+                        {
+                            int realResulte = TurnAllVarResulte;
+                            // the "off" button, which resets the value to the "disabled".
+                            if (TurnAllVarResulte == 1)
+                            {
+                                realResulte = toIntIfied[1];
+                            }
+                            // the "on" button, which resets the value to the "on", aka vanilla.
+                            else if (TurnAllVarResulte == 2)
+                            {
+                                realResulte = toIntIfied[0];
+                            }
+                            ((TextMenu.Slider)myItem).Index = realResulte;
+                            ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
+                        }
                     }
                 }
             }
             TurnAllVarSection = -1;
             TurnAllVarResulte = -1;
         }
-
         public Action CreateAction(int varSection, int varResulte)
         {
+            // INCREDIBLY scuffed method of getting this to work how i want. dont do this at home
             return () =>
             {
                 TurnAllVarSection = varSection;
@@ -130,23 +173,54 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
             };
         }
 
-        public Color returnColorFromInt(int myInt, bool isDisabled, string settingName)
+        public Color errorColor(int errorCode)
         {
-            if (myInt < 0 || myInt > 2)
+            Logger.Log(LogLevel.Error,nameof(ManualHelper),"[Error NonIdiot003] errorColor detected. deploy the error code "+errorCode);
+            // error color.
+            return ManualHelper.ManualHelperAllMenuColors[5];
+        }
+
+        // this function gets a value from myInt, and returns:
+        // gray if isDisabled is true
+        // white if 0 and the flag is default (or not ingame)
+        // blue if 0 and flag is non-default
+        // orange if above 0 and flag is default (or not ingame)
+        // pink if above 0 and flag is non-default
+        public Color returnColorFromInt(int myInt, bool isDisabled, string settingName, int typeOfSetting)
+        {
+            // add support for typeOfSetting once it is implemented
+            if (typeOfSetting < 0 || typeOfSetting > 1)
             {
-                // error color.
-                return ManualHelper.ManualHelperAllMenuColors[5];
+                return errorColor(0);
+            }
+            if (typeOfSetting == 0 || typeOfSetting == 1)
+            {
+                if (myInt < 0 || myInt > 2 + typeOfSetting)
+                {
+                    return errorColor(1);
+                }
+            }
+            bool isCounterGood = ManualHelper.ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied);
+            if (typeOfSetting == 1 && !isCounterGood)
+            {
+                return errorColor(2);
             }
             bool changedByPlayer = myInt != 0;
-            // be sure to change this when non-bool toggles are added! 
-            bool changedByMap = ManualHelper.GetFlag("ManualHelper/ToggleBool_"+settingName) == 0;
+            int returnedFlag = ManualHelper.GetFlag("ManualHelper/ToggleBool_" + settingName);
+            int returnedCounter = ManualHelper.GetCounter("ManualHelper/ToggleCounter_" + settingName);
+            // be sure to change this when more non-bool toggles are added! 
+            bool changedByMap = Engine.Scene is Level level &&
+                (typeOfSetting == 0 ? (returnedFlag == 0) : 
+                (typeOfSetting == 1 && toIntIfied != null ? (returnedCounter != toIntIfied[0]) :
+                false));
+            // dont touch the below line. its perfect the way it is methinks
             return isDisabled ? ManualHelper.ManualHelperAllMenuColors[4] : (changedByMap ? (changedByPlayer ? ManualHelper.ManualHelperAllMenuColors[2] : ManualHelper.ManualHelperAllMenuColors[1]) : (changedByPlayer ? ManualHelper.ManualHelperAllMenuColors[0] : ManualHelper.ManualHelperAllMenuColors[3]));
             //return isDisabled ? Color.DarkSlateGray: (myInt == 0 ? (Color.Red) : (myInt == 1 ? Color.Goldenrod : (myInt == 2 ? Color.Goldenrod : Color.Purple)));
         }
 
-        public void CreateDummy1Entry(TextMenuExt.SubMenu menu, bool inGame)
+        public void CreateDummy1Entry(TextMenuExt.SubMenu menu, bool inGame, TextMenu bigMenu)
         {
-            int myInt = menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader") ? 1 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader") ? 2 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader") ? 3 : 4));
+            int myInt = menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader") ? 1 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader") ? 2 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader") ? 3 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_ModdedEntityTogglesHeader") ? 4 : 5)));
             //Logger.Log(LogLevel.Info,"ManualHelper",menu.Label+" "+myInt.ToString());
             //Logger.Log(LogLevel.Info, "ManualHelper_Dummy", "bbb"+ManualHelper.Settings.DynamicSettings.Count);
             // dunno why it adds random things to DynamicSettings before this happens, but oh well. not my fault (probably)
@@ -162,58 +236,48 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                     TextMenu.Item myItem = new TextMenu.Button(label: "");
                     if (settingValue.Length >= 3)
                     {
-                        switch (settingValue[2])
+                        if (settingValue[2] == 0 || settingValue[2] == 1)
                         {
-                            case 0:
+                            myItem = new TextMenu.Slider(
+                                label: "  "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName),
+                                values: settingValue[2] == 0 ? MapDefaultOrElseBool : MapDefaultOrElseHarshLenientOn,
+                                min: 0,
+                                max: 2 + settingValue[2],
+                                value: settingValue[0]
+                            );
+                            ((TextMenu.Slider)myItem).Change(newValue =>
                             {
-                                myItem = new TextMenu.Slider(
-                                    label: "  "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName),
-                                    values: MapDefaultOrElse,
-                                    min: 0,
-                                    max: 2,
-                                    value: settingValue[0]
-                                );
-                                ((TextMenu.Slider)myItem).Change(newValue =>
-                                {
-                                    dynamicSettings[settingName][0] = newValue;
-                                    ((TextMenu.Slider)myItem).UnselectedColor = returnColorFromInt(newValue,myItem.Disabled,settingName);
-                                });
-                                ((TextMenu.Slider)myItem).UnselectedColor = returnColorFromInt(settingValue[0],myItem.Disabled,settingName);
-                                
-                                isValid = true;
-                                break;
-                            }
-                            case 1:
-                            {
-                                break;
-                            }
-                            case 2:
-                            {
-                                myItem = new TextMenu.Button(
-                                    label: Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName.Remove(settingName.Length-2))
-                                );
-                                // INCREDIBLY scuffed method of getting this to work how i want. dont do this at home
-                                ((TextMenu.Button)myItem).Pressed(CreateAction(myInt, settingValue[0]));
-                                
-                                isValid = true;
-                                break;
-                            }
-                            default:
-                            {
-                                break;
-                            }
+                                dynamicSettings[settingName][0] = newValue;
+                                ((TextMenu.Slider)myItem).UnselectedColor = returnColorFromInt(newValue,myItem.Disabled,settingName,settingValue[2]);
+                            });
+                            ((TextMenu.Slider)myItem).UnselectedColor = returnColorFromInt(settingValue[0],myItem.Disabled,settingName,settingValue[2]);
+                            
+                            isValid = true;
+                            //Logger.Log(LogLevel.Info,"ManualHelper","lalalae "+settingName+" "+settingValue[0]+" "+settingValue[1]+" "+settingValue[2]);
                         }
+                        else if (settingValue[2] == 2)
+                        {
+                            myItem = new TextMenu.Button(
+                                label: Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName.Remove(settingName.Length-2))
+                            );
+                            ((TextMenu.Button)myItem).Pressed(CreateAction(myInt, settingValue[0]));
+                            
+                            isValid = true;
+                        }
+                    }
+                    else
+                    {
+                        Logger.Log(LogLevel.Warn,"ManualHelper","Woah, woah, woah there buster, looks like you got a case of improperly made DynamicSettings.Add() code. It's a "+menu.Label+" problem, specifically.");
                     }
 
                     if (isValid)
                     {
-                        if (Dialog.Has("MODOPTIONS_MANUALHELPER_" + settingName + "Desc", Dialog.Language))
-                        {
-                            myItem.AddDescription(menu, menu.Container, Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName + "Desc"));
-                        }
-
                         DynamicSettingItems[settingName] = myItem;
                         menu.Add(myItem);
+                        if (Dialog.Has("MODOPTIONS_MANUALHELPER_" + settingName + "Desc", Dialog.Language))
+                        {
+                            myItem.AddDescription(menu, bigMenu, "nonidiotplaceholder_"+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName + "Desc"));
+                        }
                     }
                 }
             }
@@ -309,10 +373,13 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
 
 
     //[SettingSubHeader("MODOPTIONS_MANUALHELPER_MiscellaneousHeader")]
-    [SettingSubText("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabledDesc")]
-    [SettingName("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled")]
+    //[SettingSubText("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabledDesc")]
+    //[SettingName("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled")]
     public bool PauseMenuButtonEnabled { get; set; } = false;
     [SettingSubText("MODOPTIONS_MANUALHELPER_OpenManualHelperMenuDesc")]
     [SettingName("MODOPTIONS_MANUALHELPER_OpenManualHelperMenu")]
     public ButtonBinding OpenManualHelperMenu { get; set; }
+    //[SettingSubText("MODOPTIONS_MANUALHELPER_PauseOnDeathDesc")]
+    //[SettingName("MODOPTIONS_MANUALHELPER_PauseOnDeath")]
+    public bool PauseOnDeath { get; set; } = false;
 }
