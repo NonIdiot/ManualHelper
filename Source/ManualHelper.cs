@@ -19,24 +19,44 @@ using MonoMod.ModInterop;
 namespace Celeste.Mod.ManualHelper;
 
 public class ManualHelper : EverestModule {
-    // TODO: make the submenus be a Dictionary<int,string[]> where the string[0] is the header, and the int is the order in it (which corresponds to myInt)
-    // TODO: make ALL of these string[]s into one string[][] (or Dictionary<string,string[]> for readability, else label what each one is).
-    public static string[] ManualHelperTogglesBoolGrabs = [
-        "LeftClinging","LeftUncrouchedClimbjumping","LeftCrouchedClimbjumping","LeftWallInteractions","LeftWallbounces",
-        "RightClinging","RightUncrouchedClimbjumping","RightCrouchedClimbjumping","RightWallInteractions","RightWallbounces"];
-    public static string[] ManualHelperTogglesBoolDashes = [
-        "LeftDashlessClinging","LeftDashlessClimbjumping","LeftClimbjumpingDoesntCostDashes","LeftDashlessWalljumps","LeftWalljumpsDontCostDashes",
-        "RightDashlessClinging","RightDashlessClimbjumping","RightClimbjumpingDoesntCostDashes","RightDashlessWalljumps","RightWalljumpsDontCostDashes",
-        "UsableDashAttack"];
-    public static string[] ManualHelperTogglesBoolStamina = [
-        ];
-    public static string[] ManualHelperTogglesBoolVanillaEntities = [
-        "HeartDoors","NonWoodenDoors","WoodenDoors"];
-    public static string[] ManualHelperTogglesHarshLenientOnVanillaEntities = [
-        "CrumbleBlocks","Snowballs","OshiroBosses"];
-    public static string[] ManualHelperTogglesBoolModdedEntities = [
-        "ForceDisableElytra"];
     
+    // do NOT let mods touch this.
+    //public static Dictionary<string,string[]> typesOfToggles = new Dictionary<string, string[]>();
+    // mods can touch this. string is the header, and the string[x] is the order in it
+    public static Dictionary<string,string[]> ManualHelperToggles = new Dictionary<string, string[]>();
+    public static void resetManualHelperToggleGroups()
+    {
+        ManualHelperToggles = new Dictionary<string, string[]>();
+        
+        // the key has two sections. the type, and the name of the group.
+        // the type is Bools, HarshLenientOn, or .
+        // the name of the group should be /ManualHelper/<nameOfGroup>, or /<YourModID>/<nameOfGroup> if adding via Interop.
+        // note that if the type is different but the name is the same, they are still grouped together in the same subsection.
+        ManualHelperToggles.Add("Bools/ManualHelper/WallToggles",[
+            "LeftClinging","LeftUncrouchedClimbjumping","LeftCrouchedClimbjumping","LeftWallInteractions","LeftWallbounces",
+            "RightClinging","RightUncrouchedClimbjumping","RightCrouchedClimbjumping","RightWallInteractions","RightWallbounces"]);
+        ManualHelperToggles.Add("Bools/ManualHelper/DashToggles",[
+            "LeftDashlessClinging","LeftDashlessClimbjumping","LeftClimbjumpingDoesntCostDashes","LeftDashlessWalljumps","LeftWalljumpsDontCostDashes",
+            "RightDashlessClinging","RightDashlessClimbjumping","RightClimbjumpingDoesntCostDashes","RightDashlessWalljumps","RightWalljumpsDontCostDashes",
+            "UsableDashAttack"]);
+        ManualHelperToggles.Add("Bools/ManualHelper/StaminaToggles",[
+            "MadelineHasAllergyMedication"]);
+        ManualHelperToggles.Add("Bools/ManualHelper/VanillaEntityToggles",[
+            "HeartDoors","NonWoodenDoors","WoodenDoors"]);
+        ManualHelperToggles.Add("HarshLenientOn/ManualHelper/VanillaEntityToggles",[
+            "CrumbleBlocks","Snowballs","OshiroBosses"]);
+        ManualHelperToggles.Add("Bools/ManualHelper/ModdedEntityToggles",[
+            "ForceDisableElytra"]);
+        ManualHelperToggles.Add("Bools/FakeMod/CoolThing",[
+            "Wawa"]);
+        ManualHelperToggles.Add("HarshLenientOn/FakeMod/CoolThing",[
+            "Awawa"]);
+        
+        
+        //typesOfToggles = new Dictionary<string, string[]>();
+        //typesOfToggles.Add("Bools",["Bool"]);
+    }
+
     // formatted with the key being the option string above, and the int[] being [<default value>, <value that should be "disabled">].
     // to note, 0 isnt available for these, as that is what the "error code" and/or MapDefault is. See level.Session.GetCounter for why its an "error code".
     public static Dictionary<string, int[]> ManualHelperNonBoolToggleToInt = new Dictionary<string, int[]>();
@@ -44,11 +64,16 @@ public class ManualHelper : EverestModule {
     {
         ManualHelperNonBoolToggleToInt = new Dictionary<string, int[]>();
         // the HarshLenientOn should always be [3,1], as Option 1 (Harsh) is the "disabled" option, and Option 3 (On) is the "on" option.
-        foreach (string harshLenientOnString in ManualHelperTogglesHarshLenientOnVanillaEntities)
+        //foreach (string harshLenientOnString in ManualHelperTogglesHarshLenientOnVanillaEntities)
+        foreach (string key in ManualHelperToggles.Keys)
         {
-            if (!ManualHelperNonBoolToggleToInt.ContainsKey(harshLenientOnString))
+            if (key.StartsWith("HarshLenientOn/"))
             {
-                ManualHelperNonBoolToggleToInt.Add(harshLenientOnString, [3,1]);
+                if (!ManualHelperNonBoolToggleToInt.ContainsKey(key+"/"+ManualHelperToggles[key]))
+                {
+                    ManualHelperNonBoolToggleToInt.Add(key+"/"+ManualHelperToggles[key], [3, 1]);
+                    Logger.Log(LogLevel.Info,"ManualHelper_resetNonBoolToggleToInt",key+"/"+ManualHelperToggles[key]+" added huehl");
+                }
             }
         }
         //ManualHelperNonBoolToggleToInt.Add("Snowballs", [3,1]);
@@ -86,6 +111,7 @@ public class ManualHelper : EverestModule {
     public EverestModuleMetadata communalHelper;
     public override void Load()
     {
+        resetManualHelperToggleGroups();
         resetNonBoolToggleToInt();
         // dependencies and such
         communalHelper = new() {
@@ -236,18 +262,27 @@ public class ManualHelper : EverestModule {
         menu.Add(new TextMenuExt.SubHeaderExt(Dialog.Clean("MODOPTIONS_MANUALHELPER_ExplainLine3")) { TextColor = ManualHelper.ManualHelperAllMenuColors[2], HeightExtra = 0 });
         
         // major submenus
-        TextMenuExt.SubMenu myMenu1 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu1,inGame,menu);
+        string[] allCategories = ReturnAllCategories();
+        foreach (string category in allCategories)
+        {
+            string theCool = category.StartsWith("ManualHelper") ? category.Substring(category.IndexOf("/")+1) : category;
+            TextMenuExt.SubMenu myMenu = new TextMenuExt.SubMenu("MODOPTIONS_MANUALHELPER_"+theCool.Replace("/","__")+"Header", false);
+            Settings.SettingsMenu.CreateDummy1Entry(myMenu,inGame,menu);
+            menu.Add(myMenu);
+        }
+
+        /*TextMenuExt.SubMenu myMenu1 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader"), false);
+        Settings.SettingsMenu.CreateDummy1Entry(myMenu1,inGame,menu);
         menu.Add(myMenu1);
         TextMenuExt.SubMenu myMenu2 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu2,inGame,menu);
+        Settings.SettingsMenu.CreateDummy1Entry(myMenu2,inGame,menu);
         menu.Add(myMenu2);
         TextMenuExt.SubMenu myMenu3 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu3,inGame,menu);
+        Settings.SettingsMenu.CreateDummy1Entry(myMenu3,inGame,menu);
         menu.Add(myMenu3);
         TextMenuExt.SubMenu myMenu4 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_ModdedEntityTogglesHeader"), false);
-        Settings.SettingsMenu1.CreateDummy1Entry(myMenu4,inGame,menu);
-        menu.Add(myMenu4);
+        Settings.SettingsMenu.CreateDummy1Entry(myMenu4,inGame,menu);
+        menu.Add(myMenu4);*/
         
         // misc
         TextMenu.Option<bool> myButton1 = new TextMenu.OnOff(Dialog.Clean("MODOPTIONS_MANUALHELPER_PauseMenuButtonEnabled"), Settings.PauseMenuButtonEnabled)
@@ -264,9 +299,15 @@ public class ManualHelper : EverestModule {
     }
 
     // commands
-    [Command("mh_get_toggle_data", "[from ManualHelper] gets the value of a given manualhelper toggle")]
+    [Command("manuhelp_toggledata", "[from ManualHelper] gets the value of a given manualhelper toggle")]
     public static void CmdGetToggleData(string input)
     {
+        if (input == null)
+        {
+            Engine.Commands.Log("No toggle detected! Please enter the name of a toggle.");
+            return;
+        }
+
         int result = GetToggleData(input);
         Engine.Commands.Log("Input "+input+" returned "+result+".");
         switch (result)
@@ -293,7 +334,32 @@ public class ManualHelper : EverestModule {
             }
         }
     }
-    
+
+    [Command("counters", "[from ManualHelper] gets the value of every non-zero counter")]
+    public static void CmdCounters(string input)
+    {
+        if (!(Engine.Scene is Level))
+        {
+            Engine.Commands.Log("Not currently ingame!");
+        }
+        else if ((Engine.Scene as Level).Session is null)
+        {
+            Engine.Commands.Log("Session is currently null!");
+        }
+        else
+        {
+            bool becomeEvil = input != null;
+            Engine.Commands.Log("Active "+(becomeEvil ? "non-zero " : "")+"counters:");
+            foreach (Session.Counter myCount in (Engine.Scene as Level).Session.Counters)
+            {
+                if (!becomeEvil || myCount.Value != 0)
+                {
+                    Engine.Commands.Log(myCount.Key+": "+myCount.Value);
+                }
+            }
+        }
+    }
+
     // tools
     public static int GetToggleData(string whichOne)
     {
@@ -301,9 +367,9 @@ public class ManualHelper : EverestModule {
         // for bool toggles this is 0 if Map Default, 1 if Off, and 2 if On
         // otherwise, 0 is Map Default and 1+ is whatever the value is.
 
+        Settings.InitializeDynamicSettings();
         if (Settings.DynamicSettings.ContainsKey(whichOne))
         {
-            Settings.InitializeDynamicSettings();
             return (Settings.DynamicSettings[whichOne])[0];
         }
 
@@ -416,9 +482,9 @@ public class ManualHelper : EverestModule {
     }
 
     // true is left
-    public static bool CanLRInteract(Player self, bool dir, string name)
+    public static bool CanLRInteract(Player self, bool dir, string name, string prefix)
     {
-        return dir ? ReturnFromBoolToggle("Left"+name) : ReturnFromBoolToggle("Right"+name);
+        return dir ? ReturnFromBoolToggle("Bools/"+prefix+"/Left"+name) : ReturnFromBoolToggle("Bools/"+prefix+"/Right"+name);
     }
     
     // note that for flags, they are only used for 2-answer entries. the base format is "ManualHelper/ToggleBool_<togglename>", and 1 means unset by map and 0 means set by map.
@@ -463,29 +529,126 @@ public class ManualHelper : EverestModule {
         }*/
 
         string[] setFlagsToTrue = [];
-        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolGrabs).ToArray();
-        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolDashes).ToArray();
-        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolVanillaEntities).ToArray();
-        setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolModdedEntities).ToArray();
+        string[] setCountersToDefault = [];
+        foreach (string key in ManualHelperToggles.Keys)
+        {
+            string evilKey = "";
+            if (key.StartsWith("Bools/"))
+            {
+                evilKey = "Bools/";
+                foreach (string toggle in ManualHelperToggles[key])
+                {
+                    string splitThang = key.Substring(evilKey.Length);
+                    //Logger.Log(LogLevel.Info, "ManualHelper_InitFlags1", key);
+                    //Logger.Log(LogLevel.Info, "ManualHelper_InitFlags2", splitThang);
+                    if (splitThang.StartsWith("ManualHelper/"))
+                    {
+                        // results in the appended string being something like "LeftClinging" or "UsableDashAttack",
+                        // which translates to the flag being named "ManualHelper/ToggleBool_LeftClinging".
+                        setFlagsToTrue = setFlagsToTrue.Append(toggle).ToArray();
+                    }
+                    else
+                    {
+                        // results in the appended string being something like "/ModName/CustomToggle1",
+                        // which translates to the flag being named "ManualHelper/ModName/ToggleBool_CustomToggle1".
+                        //Logger.Log(LogLevel.Info, "ManualHelper_InitFlags3", splitThang.Remove(splitThang.LastIndexOf("/")));
+                        // ReSharper disable once StringLastIndexOfIsCultureSpecific.1
+                        setFlagsToTrue = setFlagsToTrue.Append("/"+splitThang.Remove(splitThang.LastIndexOf("/"))+"/"+toggle).ToArray();
+                    }
+                }
+            }
+            if (key.StartsWith("HarshLenientOn/") || false)
+            {
+                evilKey = "HarshLenientOn/";
+                foreach (string toggle in ManualHelperToggles[key])
+                {
+                    string splitThang = key.Substring(evilKey.Length);
+                    if (splitThang.StartsWith("ManualHelper/"))
+                    {
+                        // results in the appended string being something like "CrumbleBlocks" or "Snowballs",
+                        // which translates to the counter being named "ManualHelper/ToggleCounter_CrumbleBlocks".
+                        setCountersToDefault = setCountersToDefault.Append(toggle).ToArray();
+                    }
+                    else
+                    {
+                        // results in the appended string being something like "/ModName/CustomToggle2",
+                        // which translates to the counter being named "ManualHelper/ModName/ToggleCounter_CustomToggle2".
+                        // ReSharper disable once StringLastIndexOfIsCultureSpecific.1
+                        setCountersToDefault = setCountersToDefault.Append("/"+splitThang.Remove(splitThang.LastIndexOf("/"))+"/"+toggle).ToArray();
+                    }
+                }
+            }
+            //setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperToggles[key]).ToArray();
+        }
+        //setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolGrabs).ToArray();
+        //setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolDashes).ToArray();
+        //setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolVanillaEntities).ToArray();
+        //setFlagsToTrue = setFlagsToTrue.Concat(ManualHelperTogglesBoolModdedEntities).ToArray();
         foreach (string flagName in setFlagsToTrue)
         {
-            if (!Session.flagsAlreadySet.Contains("ManualHelper/ToggleBool_"+flagName))
+            string realFlagName = "ManualHelper/ToggleBool_" + flagName;
+            if (flagName.StartsWith("/"))
             {
-                level.Session.SetFlag("ManualHelper/ToggleBool_"+flagName,true);
-                Session.flagsAlreadySet.Add("ManualHelper/ToggleBool_"+flagName);
+                string myFlagName = flagName.Substring(1);
+                realFlagName = "ManualHelper/" + myFlagName.Remove(myFlagName.LastIndexOf("/")) + "/ToggleBool_" + myFlagName.Substring(myFlagName.LastIndexOf("/")+1);
+            }
+            Logger.Log(LogLevel.Info, "ManualHelper_InitFlags4",realFlagName);
+            if (!Session.flagsAlreadySet.Contains(realFlagName))
+            {
+                level.Session.SetFlag(realFlagName,true);
+                Session.flagsAlreadySet.Add(realFlagName);
             }
         }
 
-        string[] setCountersToDefault = [];
-        setCountersToDefault=setFlagsToTrue.Concat(ManualHelperTogglesHarshLenientOnVanillaEntities).ToArray();
+        //string[] setCountersToDefault = [];
+        //setCountersToDefault=setFlagsToTrue.Concat(ManualHelperTogglesHarshLenientOnVanillaEntities).ToArray();
         foreach (string counterName in setCountersToDefault)
         {
-            if (!Session.countersAlreadySet.Contains("ManualHelper/ToggleCounter_"+counterName) && ManualHelperNonBoolToggleToInt.TryGetValue(counterName, out int[] toIntIfied))
+            string realCounterName = "ManualHelper/ToggleCounter_"+counterName;
+            if (counterName.StartsWith("/"))
             {
-                level.Session.SetCounter("ManualHelper/ToggleCounter_"+counterName,toIntIfied[0]);
-                Session.countersAlreadySet.Add("ManualHelper/ToggleCounter_"+counterName);
+                string myFlagName = realCounterName.Substring(1);
+                realCounterName = "ManualHelper/" + myFlagName.Remove(myFlagName.LastIndexOf("/")) + "/ToggleCounter_" + myFlagName.Substring(myFlagName.LastIndexOf("/")+1);
+            }
+            Logger.Log(LogLevel.Info, "ManualHelper_InitFlags5",realCounterName+"   ao   "+counterName);
+            if (!Session.countersAlreadySet.Contains(realCounterName) && ManualHelperNonBoolToggleToInt.TryGetValue(counterName, out int[] toIntIfied))
+            {
+                level.Session.SetCounter(realCounterName,toIntIfied[0]);
+                Session.countersAlreadySet.Add(realCounterName);
             }
         }
+    }
+
+    public static string[] ReturnAllCategories()
+    {
+        string[] allCategories = [];
+        foreach (string key in ManualHelperToggles.Keys)
+        {
+            if (key.Contains("/"))
+            {
+                if (!allCategories.Contains(key.Substring(key.IndexOf("/")+1)))
+                {
+                    allCategories = allCategories.Append(key.Substring(key.IndexOf("/")+1)).ToArray();
+                }
+            }
+            else
+            {
+                // in case of issues, report here
+                Logger.Log(LogLevel.Error, "ManualHelper_ReturnAllCategories","Well it sure seems that "+key+" doesn't have a \"/\" in it. Odd.");
+            }
+        }
+        if (1 == 0)
+#pragma warning disable CS0162 // Unreachable code detected
+        {
+            Logger.Log(LogLevel.Info, "ManualHelper_ReturnAllCategories2","Sending all categories!");
+            foreach (string category in allCategories)
+            {
+                Logger.Log(LogLevel.Info, "ManualHelper_ReturnAllCategories2",category);
+            }
+            Logger.Log(LogLevel.Info, "ManualHelper_ReturnAllCategories2","All categories sent!");
+        }
+#pragma warning restore CS0162 // Unreachable code detected
+        return allCategories;
     }
 
     public static void RetractDash(Player self)
@@ -498,8 +661,8 @@ public class ManualHelper : EverestModule {
 
     public static bool HasDoorOfType(Door myDoor)
     {
-        return (ReturnFromBoolToggle("NonWoodenDoors") && myDoor.openSfx != "event:/game/03_resort/door_wood_open") ||
-               (ReturnFromBoolToggle("WoodenDoors") && myDoor.openSfx == "event:/game/03_resort/door_wood_open");
+        return (ReturnFromBoolToggle("Bools/ManualHelper/VanillaEntityToggles/NonWoodenDoors") && myDoor.openSfx != "event:/game/03_resort/door_wood_open") ||
+               (ReturnFromBoolToggle("Bools/ManualHelper/VanillaEntityToggles/WoodenDoors") && myDoor.openSfx == "event:/game/03_resort/door_wood_open");
     }
 
     // hooks
@@ -507,7 +670,7 @@ public class ManualHelper : EverestModule {
     // for preventing climbing stuff
     private static bool OnCelestePlayerClimbCheck(On.Celeste.Player.orig_ClimbCheck orig, Player self, int dir, int yAdd)
     {
-        if ((((!ReturnFromBoolToggle("LeftClinging") || (!ReturnFromBoolToggle("LeftDashlessClinging") && self.Dashes < 1)) && dir == -1) || ((!ReturnFromBoolToggle("RightClinging") || (!ReturnFromBoolToggle("RightDashlessClinging") && self.Dashes < 1)) && dir == 1)) && !self.level.InCredits)
+        if ((((!ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/LeftClinging") || (!ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/LeftDashlessClinging") && self.Dashes < 1)) && dir == -1) || ((!ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/RightClinging") || (!ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/RightDashlessClinging") && self.Dashes < 1)) && dir == 1)) && !self.level.InCredits)
         {
             return false;
         }
@@ -519,15 +682,15 @@ public class ManualHelper : EverestModule {
     private static void OnCelestePlayerClimbJump(On.Celeste.Player.orig_ClimbJump orig, Player self)
     {
         if (((self.Facing == Facings.Left ?
-                (self.Ducking ? ReturnFromBoolToggle("LeftCrouchedClimbjumping") :
-                    ReturnFromBoolToggle("LeftUncrouchedClimbjumping")) :
-                (self.Ducking ? ReturnFromBoolToggle("RightCrouchedClimbjumping") :
-                    ReturnFromBoolToggle("RightUncrouchedClimbjumping"))) &&
-                (self.Dashes > 0 || CanLRInteract(self, self.Facing == Facings.Left, "DashlessClimbjumping")))
+                (self.Ducking ? ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/LeftCrouchedClimbjumping") :
+                    ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/LeftUncrouchedClimbjumping")) :
+                (self.Ducking ? ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/RightCrouchedClimbjumping") :
+                    ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/RightUncrouchedClimbjumping"))) &&
+                (self.Dashes > 0 || CanLRInteract(self, self.Facing == Facings.Left, "DashlessClimbjumping","ManualHelper/DashToggles")))
             || self.level.InCredits)
         {
             orig(self);
-            if (!CanLRInteract(self, self.Facing == Facings.Left, "ClimbjumpingDoesntCostDashes"))
+            if (!CanLRInteract(self, self.Facing == Facings.Left, "ClimbjumpingDoesntCostDashes","ManualHelper/DashToggles"))
             {
                 if (self.Dashes > 0)
                 {
@@ -554,9 +717,9 @@ public class ManualHelper : EverestModule {
     private static void OnCelestePlayerWallJump(On.Celeste.Player.orig_WallJump orig, Player self, int dir)
     {
         bool doOrig = false;
-        if (self.Dashes > 0 || CanLRInteract(self, dir == 1, "DashlessWalljumps"))
+        if (self.Dashes > 0 || CanLRInteract(self, dir == 1, "DashlessWalljumps","ManualHelper/DashToggles"))
         {
-            if (CanLRInteract(self,dir == 1,"WallInteractions"))
+            if (CanLRInteract(self,dir == 1,"WallInteractions","ManualHelper/WallToggles"))
             {
                 doOrig = true;
             }
@@ -574,7 +737,7 @@ public class ManualHelper : EverestModule {
         if (doOrig)
         {
             orig(self, dir);
-            if (!CanLRInteract(self, dir == 1, "WalljumpsDontCostDashes"))
+            if (!CanLRInteract(self, dir == 1, "WalljumpsDontCostDashes","ManualHelper/DashToggles"))
             {
                 if (self.Dashes > 0)
                 {
@@ -589,7 +752,7 @@ public class ManualHelper : EverestModule {
     // for preventing wallbounce stuff
     private static void OnCelestePlayerSuperWallJump(On.Celeste.Player.orig_SuperWallJump orig, Player self, int dir)
     {
-        if (CanLRInteract(self,dir == 1,"Wallbounces"))
+        if (CanLRInteract(self,dir == 1,"Wallbounces","ManualHelper/WallToggles"))
         {
             orig(self, dir);
         }
@@ -615,7 +778,7 @@ public class ManualHelper : EverestModule {
     // for preventing sliding on walls that aren't enabled
     private static int OnCelestePlayerNormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self)
     {
-        if (!CanLRInteract(self, (int)self.Facing == -1,"WallInteractions") && (self as Monocle.Entity).CollideCheck<Solid>(self.Position + Vector2.UnitX * (float)self.Facing))
+        if (!CanLRInteract(self, (int)self.Facing == -1,"WallInteractions","ManualHelper/WallToggles") && (self as Monocle.Entity).CollideCheck<Solid>(self.Position + Vector2.UnitX * (float)self.Facing))
         {
             self.wallSlideTimer = 0;
         }
@@ -625,7 +788,7 @@ public class ManualHelper : EverestModule {
     // for preventing dash attack state. thx to maddie480's Extended Variants for the code!
     // ReSharper disable once UnusedMember.Local
     private static bool weirdHookCelestePlayerGetDashAttacking(Func<Player, bool> orig, Player self) {
-        if (!isRenderingCode && !ReturnFromBoolToggle("UsableDashAttack")) {
+        if (!isRenderingCode && !ReturnFromBoolToggle("Bools/ManualHelper/DashToggles/UsableDashAttack")) {
             return false;
         }
 
@@ -643,7 +806,7 @@ public class ManualHelper : EverestModule {
     // Prevents heart door from being instantialized as already opened (I think, probably doesn't work for modded Gem Doors)
     private static void OnCelesteHeartGemDoorAdded(On.Celeste.HeartGemDoor.orig_Added orig, HeartGemDoor self, Scene scene)
     {
-        if (!ReturnFromBoolToggle("HeartDoors"))
+        if (!ReturnFromBoolToggle("Bools/ManualHelper/VanillaEntityToggles/HeartDoors"))
         {
             (scene as Level).Session.SetFlag("opened_heartgem_door_" + self.Requires, false);
             self.Opened = false;
@@ -658,7 +821,7 @@ public class ManualHelper : EverestModule {
     // Prevents heart door from opening
     // ReSharper disable once UnusedMember.Local
     private static int weirdHookCelesteHeartGemDoorSetHeartGems(Func<HeartGemDoor, int> orig, HeartGemDoor self) {
-        if (!ReturnFromBoolToggle("HeartDoors")) {
+        if (!ReturnFromBoolToggle("Bools/ManualHelper/VanillaEntityToggles/HeartDoors")) {
             return 0;
         }
 
@@ -706,7 +869,7 @@ public class ManualHelper : EverestModule {
     {
         if (self is CrumblePlatform)
         {
-            if (ReturnFromCounterToggle("CrumbleBlocks") != 3)
+            if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") != 3)
             {
                 if (self.Collidable)
                 {
@@ -715,7 +878,7 @@ public class ManualHelper : EverestModule {
                         Audio.Play("event:/game/general/assist_nonsolid_out",self.Position);
                         self.Collidable = false;
                         Player realSelf = orig(self);
-                        if (ReturnFromCounterToggle("CrumbleBlocks") == 1)
+                        if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") == 1)
                         {
                             realSelf.Dashes = 0;
                         }
@@ -737,7 +900,7 @@ public class ManualHelper : EverestModule {
     {
         if (self is CrumblePlatform)
         {
-            if (ReturnFromCounterToggle("CrumbleBlocks") != 3)
+            if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") != 3)
             {
                 if (self.Collidable)
                 {
@@ -746,7 +909,7 @@ public class ManualHelper : EverestModule {
                         Audio.Play("event:/game/general/assist_nonsolid_out",self.Position);
                         self.Collidable = false;
                         Player realSelf = orig(self);
-                        if (ReturnFromCounterToggle("CrumbleBlocks") == 1)
+                        if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") == 1)
                         {
                             realSelf.Dashes = 0;
                         }
@@ -779,7 +942,7 @@ public class ManualHelper : EverestModule {
     private static void OnCelestePlayerRender(On.Celeste.Player.orig_Render orig, Player self)
     {
         
-        shakeAmount = ReturnFromCounterToggle("CrumbleBlocks") == 3 ? 0 : (self.Ducking ? 0.5f : 1);
+        shakeAmount = ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") == 3 ? 0 : (self.Ducking ? 0.5f : 1);
 
         Vector2 coolOffset = Vector2.Zero;
         float tempShakeAmount = shakeAmount + 0;
@@ -814,11 +977,11 @@ public class ManualHelper : EverestModule {
     // for preventing bounce on Snowballs.
     private static void OnCelesteSnowballOnPlayerBounce(On.Celeste.Snowball.orig_OnPlayerBounce orig, Snowball self, Player player)
     {
-        if (ReturnFromCounterToggle("Snowballs") == 3)
+        if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/Snowballs") == 3)
         {
             orig(self, player);
         }
-        else if (ReturnFromCounterToggle("Snowballs") == 1)
+        else if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/Snowballs") == 1)
         {
             self.OnPlayer(player);
         }
@@ -827,11 +990,11 @@ public class ManualHelper : EverestModule {
     // for preventing bounce on Oshiro Bosses.
     private static void OnCelesteAngryOshiroOnPlayerBounce(On.Celeste.AngryOshiro.orig_OnPlayerBounce orig, AngryOshiro self, Player player)
     {
-        if (ReturnFromCounterToggle("OshiroBosses") == 3)
+        if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/OshiroBosses") == 3)
         {
             orig(self, player);
         }
-        else if (ReturnFromCounterToggle("OshiroBosses") == 1)
+        else if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/OshiroBosses") == 1)
         {
             self.OnPlayer(player);
         }
@@ -866,7 +1029,7 @@ public class ManualHelper : EverestModule {
     // drawing the heart gem door but evil
     private static void OnCelesteHeartGemDoorDrawEdges(On.Celeste.HeartGemDoor.orig_DrawEdges orig, HeartGemDoor self, Rectangle bounds, Color color)
     {
-        if (!ReturnFromBoolToggle("HeartDoors")) {
+        if (!ReturnFromBoolToggle("Bools/ManualHelper/VanillaEntityToggles/HeartDoors")) {
             orig(self, bounds, new Color((int)(Math.Sin((float)Engine.FrameCounter/10f)*127)+127, 0, 0));
         }
         else
@@ -963,7 +1126,7 @@ public class ManualHelper : EverestModule {
     // ReSharper disable once UnusedMember.Local
     private static int weirdHookCommunalHelperGetElytraCooldown(Func<StateMachine, int> orig, StateMachine self) {
         int dreamTunnelState = CommunalHelperImports.GetDreamTunnelDashState?.Invoke() ?? -999;
-        if (self.Entity is Player && !ReturnFromBoolToggle("ForceDisableElytra") && dreamTunnelState+1 == self.State) {
+        if (self.Entity is Player && !ReturnFromBoolToggle("Bools/ManualHelper/WallToggles/ForceDisableElytra") && dreamTunnelState+1 == self.State) {
             return 0;
         }
         else

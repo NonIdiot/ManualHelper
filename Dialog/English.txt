@@ -112,6 +112,13 @@ MODOPTIONS_MANUALHELPER_UsableDashAttackDesc=
   If disabled, prevents "DashAttacking" from returning true.
   (Prevents dashing into Crystal Hearts, Breaker Boxes, etc.)
   
+MODOPTIONS_MANUALHELPER_StaminaTogglesHeader=
+  Stamina Toggles
+MODOPTIONS_MANUALHELPER_MadelineHasAllergyMedication=
+  Madeline Has Allergy Medication
+MODOPTIONS_MANUALHELPER_MadelineHasAllergyMedicationDesc=
+  If disabled, Madeline loses all stamina when around Dust Bunnies.
+  
 MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader=
   Vanilla Entity Toggles
 MODOPTIONS_MANUALHELPER_HeartDoors=
