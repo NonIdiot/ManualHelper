@@ -53,11 +53,15 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                     {
                         typeOfSetting = 1;
                     }
+                    if (key.StartsWith("IntsMultiplier/") || key.StartsWith("IntsCustom/"))
+                    {
+                        typeOfSetting = 2;
+                    }
                     if (typeOfSetting != -1)
                     {
                         int indexThe = Array.IndexOf(allCategories, key.Substring(key.IndexOf("/") + 1));
-                        int[] returnValue = [0, allCategories.Contains(key.Substring(key.IndexOf("/") + 1)) ? indexThe : -1, typeOfSetting];
-                        Logger.Log(LogLevel.Info, "ManualHelper_InitializeDynamicSettings2","Return value of "+output+": ["+returnValue[0]+","+returnValue[1]+","+returnValue[2]+"]");
+                        int[] returnValue = [0, indexThe, typeOfSetting];//allCategories.Contains(key.Substring(key.IndexOf("/") + 1)) ? indexThe : -1 just returns indexThe ngl so im just gonna put indexThe
+                        //Logger.Log(LogLevel.Info, "ManualHelper_InitializeDynamicSettings2","Return value of "+output+": ["+returnValue[0]+","+returnValue[1]+","+returnValue[2]+"]");
                         ManualHelper.Settings.DynamicSettings.Add(key+"/"+output,returnValue);
                     }
                 }
@@ -166,7 +170,7 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                             ((TextMenu.Slider)myItem).Index = TurnAllVarResulte;
                             ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
                         }
-                        else if (value[2] == 1 && ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied))
+                        else if ((value[2] == 1 || value[2] == 2) && ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied))
                         {
                             int realResulte = TurnAllVarResulte;
                             // the "off" button, which resets the value to the "disabled".
@@ -232,8 +236,8 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                 return errorColor(2,"setting "+settingName+" not found in ManualHelperNonBoolToggleToInt!");
             }
             bool changedByPlayer = daInt != 0;
-            int returnedFlag = GetFlag("ManualHelper/ToggleBool_" + settingName);
-            int returnedCounter = GetCounter("ManualHelper/ToggleCounter_" + settingName);
+            int returnedFlag = GetFlag(settingName);
+            int returnedCounter = GetCounter(settingName);
             // be sure to change this when more non-bool toggles are added! 
             bool changedByMap = Engine.Scene is Level level &&
                 (typeOfSetting == 0 ? (returnedFlag == 0) : 
@@ -247,14 +251,18 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
         // now HERE is where the entries are made.
         public void CreateDummy1Entry(TextMenuExt.SubMenu menu, bool inGame, TextMenu bigMenu)
         {
+            // i LOOOOOOVE ReturnAllCategories(). but i cant use it cause it'll use too much ram. but it tastes SOOOOOOOOO good...
             string[] allCategories = ReturnAllCategories();
+            // crash prevention
             string theResult = menu.Label.Length > "MODOPTIONS_MANUALHELPER_".Length ? menu.Label.Substring("MODOPTIONS_MANUALHELPER_".Length) : "grievous error";
-            Logger.Log(LogLevel.Info,"ManualHelper_CreateDummy1Entry1",theResult);
+            //Logger.Log(LogLevel.Info,"ManualHelper_CreateDummy1Entry1",theResult);
+            // be sure that the header is there, and if it is, it is removed. also replace all "__" with "/".
             theResult = theResult.Contains("Header") ? theResult.Remove(theResult.IndexOf("Header")).Replace("__", "/") : "grievous error "+menu.Label;
-            Logger.Log(LogLevel.Info,"ManualHelper_CreateDummy1Entry2",theResult);
+            //Logger.Log(LogLevel.Info,"ManualHelper_CreateDummy1Entry2",theResult);
+            // if allCategories has theResult, return the index of the modded result. otherwise, retry with "ManualHelper/" added to the start (such as from vanilla Toggles)
             int myInt = allCategories.Contains(theResult) ? Array.IndexOf(allCategories, theResult) : ((!theResult.Contains("__") && allCategories.Contains("ManualHelper/"+theResult)) ? Array.IndexOf(allCategories, "ManualHelper/"+theResult) : -1);
-            Logger.Log(LogLevel.Info,"ManualHelper_CreateDummy1Entry3",(myInt).ToString());
-            menu.Label = (theResult.Contains("__") ? "["+theResult.Remove(theResult.IndexOf("/"+1))+"]" : "")+Dialog.Clean(menu.Label);
+            //Logger.Log(LogLevel.Info,"ManualHelper_CreateDummy1Entry3",(myInt).ToString());
+            menu.Label = (theResult.Contains("__") ? "["+theResult.Remove(theResult.IndexOf("/"))+"]" : "")+Dialog.Clean(menu.Label);
             //int myInt = menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader") ? 1 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_DashTogglesHeader") ? 2 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_VanillaEntityTogglesHeader") ? 3 : (menu.Label == Dialog.Clean("MODOPTIONS_MANUALHELPER_ModdedEntityTogglesHeader") ? 4 : 5)));
             //Logger.Log(LogLevel.Info,"ManualHelper",menu.Label+" "+myInt.ToString());
             //Logger.Log(LogLevel.Info, "ManualHelper_Dummy", "bbb"+ManualHelper.Settings.DynamicSettings.Count);
@@ -276,10 +284,14 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                     {
                         if (settingValue[2] == 0 || settingValue[2] == 1)
                         {
-                            string theString = (settingName.Substring(settingName.IndexOf("/")+1).StartsWith("ManualHelper") ? "" : settingName.Substring(settingName.IndexOf("/")+1).Remove(settingName.Substring(settingName.IndexOf("/")+1).IndexOf("/"))+"/")+settingName.Substring(settingName.LastIndexOf("/") + 1);
-                            Logger.Log(LogLevel.Info,"ManualHelper_TextMenuSlider","jj345 "+theString+" jj678 "+settingName+" wawow "+settingName.Substring(settingName.IndexOf("/")+1));
+                            /*string subStringString = settingName.Substring(settingName.IndexOf("/") + 1);
+                            subStringString = subStringString.Substring(subStringString.IndexOf("/") + 1);
+                            subStringString = subStringString.Substring(subStringString.IndexOf("/") + 1).Replace("/","__");
+                            string theString = (settingName.Substring(settingName.IndexOf("/")+1).StartsWith("ManualHelper") ? "" : settingName.Substring(settingName.IndexOf("/")+1).Remove(settingName.Substring(settingName.IndexOf("/")+1).IndexOf("/"))+"__")+subStringString;
+                            Logger.Log(LogLevel.Info,"ManualHelper_TextMenuSlider","jj345 "+theString+" jj678 "+settingName+" wawow "+settingName.Substring(settingName.IndexOf("/")+1));*/
+                            string theString = ReturnOutputFromName(settingName, 1);
                             myItem = new TextMenu.Slider(
-                                label: "  "+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + theString),
+                                label: "  "+Dialog.Clean(theString),
                                 values: settingValue[2] == 0 ? MapDefaultOrElseBool : MapDefaultOrElseHarshLenientOn,
                                 min: 0,
                                 max: 2 + settingValue[2],
@@ -314,9 +326,10 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                     {
                         DynamicSettingItems[settingName] = myItem;
                         menu.Add(myItem);
-                        if (Dialog.Has("MODOPTIONS_MANUALHELPER_" + settingName + "Desc", Dialog.Language))
+                        string theString = settingValue[2] == 2 ? "shouldntshowuplmao" : ReturnOutputFromName(settingName, 1);
+                        if (Dialog.Has(theString + "Desc", Dialog.Language))
                         {
-                            myItem.AddDescription(menu, bigMenu, "nonidiotplaceholder_"+Dialog.Clean("MODOPTIONS_MANUALHELPER_" + settingName + "Desc"));
+                            myItem.AddDescription(menu, bigMenu, "nonidiotplaceholder_"+Dialog.Clean(theString + "Desc"));
                         }
                     }
                 }

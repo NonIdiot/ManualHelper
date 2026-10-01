@@ -126,6 +126,14 @@ MODOPTIONS_MANUALHELPER_HeartDoors=
 MODOPTIONS_MANUALHELPER_HeartDoorsDesc=
   Allows Heart Doors to open.
   (Limited functionality for modded Heart Doors.)
+MODOPTIONS_MANUALHELPER_NonWoodenDoors=
+  Non-Wooden Doors
+MODOPTIONS_MANUALHELPER_NonWoodenDoorsDesc=
+  Allows the player to pass through non-Wooden background doors.
+MODOPTIONS_MANUALHELPER_WoodenDoors=
+  Wooden Doors
+MODOPTIONS_MANUALHELPER_WoodenDoorsDesc=
+  Allows the player to pass through Wooden background doors.
 MODOPTIONS_MANUALHELPER_CrumbleBlocks=
   Crumble Blocks
 MODOPTIONS_MANUALHELPER_CrumbleBlocksDesc=

@@ -7,3 +7,5 @@
   OptionalDependencies:
     - Name: CommunalHelper
       Version: 1.25.5
+    - Name: GravityHelper
+      Version: 1.2.28
