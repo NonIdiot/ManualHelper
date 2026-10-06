@@ -45,16 +45,17 @@ public class ManualHelper : EverestModule {
             "UsableDashAttack"]);
         ManualHelperToggles.Add("Bools/ManualHelper/StaminaToggles",[
             "MadelineHasAllergyMedication"]);
+        ManualHelperToggles.Add("IntsStaminaDefaultZero/ManualHelper/StaminaToggles",[
+            "DashStaminaCost"]);
+        //ManualHelperToggles.Add("Bools/ManualHelper/StaminaToggles",[
+        //    "CanDashWithoutStamina"]);
         ManualHelperToggles.Add("Bools/ManualHelper/VanillaEntityToggles",[
             "HeartDoors","NonWoodenDoors","WoodenDoors"]);
         ManualHelperToggles.Add("HarshLenientOn/ManualHelper/VanillaEntityToggles",[
             "CrumbleBlocks","Snowballs","OshiroBosses"]);
-        // if ANY mod with entity toggles is enabled
-        if (communalHelperLoaded || false)
-        {
-            ManualHelperToggles.Add("Bools/ManualHelper/ModdedEntityToggles",[
-                "FakeMod/Awewa"]);//,
-        }
+        // note, if a category is empty, it will still be SOMEWHAT present, it just will not be added to the Mod Options menu.
+        ManualHelperToggles.Add("Bools/ManualHelper/ModdedEntityToggles",[
+            ]);//,"FakeMod/Awewa"
 
         if (communalHelperLoaded)
         {
@@ -82,7 +83,7 @@ public class ManualHelper : EverestModule {
     // ManualHelperNonBoolToggleToInt is formatted with the int[] being [<default value>, <value that should be "disabled">].
     // to note, 0 isnt available for these, as that is what the "error code" and/or MapDefault is. See level.Session.GetCounter for why its an "error code".
     public static Dictionary<string, int[]> ManualHelperNonBoolToggleToInt = new Dictionary<string, int[]>();
-    // ManualHelperNonBoolToggleToIntAllValues is formatted with the int[] being value/10.
+    // ManualHelperNonBoolToggleToIntAllValues is formatted with the int[] being value/10. The first value is always ignored in favor of Mod Options.
     public static Dictionary<string, int[]> ManualHelperNonBoolToggleToIntAllValues = new Dictionary<string, int[]>();
     public static void resetNonBoolToggleToInt()
     {
@@ -105,6 +106,10 @@ public class ManualHelper : EverestModule {
             {
                 whichOptionWas = 2;
             }
+            if (key.StartsWith("IntsStaminaDefaultZero/"))
+            {
+                whichOptionWas = 3;
+            }
 
             if (whichOptionWas != -1) {
                 if (!ManualHelperNonBoolToggleToInt.ContainsKey(key+"/"+ManualHelperToggles[key]))
@@ -112,8 +117,8 @@ public class ManualHelper : EverestModule {
                     string[] Lees = ManualHelperToggles[key];
                     foreach (string lee in Lees)
                     {
-                        ManualHelperNonBoolToggleToInt.Add(key+"/"+lee, whichOptionWas == 0 ? [3, 1] : (whichOptionWas == 2 ? [10,1] : [1,1]));
-                        ManualHelperNonBoolToggleToIntAllValues.Add(key+"/"+lee, whichOptionWas == 0 ? [1,2,3] : (whichOptionWas == 2 ? [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25,30,35,40,45,50,60,70,80,90,100] : []));
+                        ManualHelperNonBoolToggleToInt.Add(key+"/"+lee, whichOptionWas == 0 ? [3, 1] : (whichOptionWas == 2 ? [11,1] : (whichOptionWas == 3 ? [1,25] : [1,1])));
+                        ManualHelperNonBoolToggleToIntAllValues.Add(key+"/"+lee, whichOptionWas == 0 ? [1,2,3] : (whichOptionWas == 2 ? [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25,30,35,40,45,50,60,70,80,90,100] : (whichOptionWas == 3 ? [-1,0,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,9999] : [])));
                         //Logger.Log(LogLevel.Info,"ManualHelper_resetNonBoolToggleToInt",key+"/"+lee+" "+whichOptionWas+" added huehl");
                     }
                 }
@@ -193,7 +198,7 @@ public class ManualHelper : EverestModule {
         On.Celeste.HeartGemDoor.Added += OnCelesteHeartGemDoorAdded;
         Everest.Events.Level.OnCreatePauseMenuButtons += EverestEventsLevelOnCreatePauseMenuButtons;
         On.Celeste.Solid.GetPlayerOnTop += OnCelesteSolidGetPlayerOnTop;
-        On.Celeste.Solid.GetPlayerClimbing += OnCelesteSolidGetPlayerClimbing;
+        //On.Celeste.Solid.GetPlayerClimbing += OnCelesteSolidGetPlayerClimbing;
         Everest.Events.Level.OnLoadLevel += EverestEventsLevelLoaderOnLoadLevel;
         On.Celeste.Player.Render += OnCelestePlayerRender;
         On.Celeste.Player.UpdateHair += OnCelestePlayerUpdateHair;
@@ -227,7 +232,7 @@ public class ManualHelper : EverestModule {
         On.Celeste.HeartGemDoor.Added -= OnCelesteHeartGemDoorAdded;
         Everest.Events.Level.OnCreatePauseMenuButtons -= EverestEventsLevelOnCreatePauseMenuButtons;
         On.Celeste.Solid.GetPlayerOnTop -= OnCelesteSolidGetPlayerOnTop;
-        On.Celeste.Solid.GetPlayerClimbing -= OnCelesteSolidGetPlayerClimbing;
+        //On.Celeste.Solid.GetPlayerClimbing -= OnCelesteSolidGetPlayerClimbing;
         Everest.Events.Level.OnLoadLevel -= EverestEventsLevelLoaderOnLoadLevel;
         On.Celeste.Player.Render -= OnCelestePlayerRender;
         On.Celeste.Player.UpdateHair -= OnCelestePlayerUpdateHair;
@@ -324,6 +329,10 @@ public class ManualHelper : EverestModule {
             TextMenuExt.SubMenu myMenu = new TextMenuExt.SubMenu("MODOPTIONS_MANUALHELPER_"+theCool.Replace("/","__")+"Header", false);
             Settings.SettingsMenu.CreateDummy1Entry(myMenu,inGame,menu);
             menu.Add(myMenu);
+            if (myMenu.Items.Count <= 3)
+            {
+                menu.Remove(myMenu);
+            }
         }
 
         /*TextMenuExt.SubMenu myMenu1 = new TextMenuExt.SubMenu(Dialog.Clean("MODOPTIONS_MANUALHELPER_WallTogglesHeader"), false);
@@ -574,6 +583,7 @@ public class ManualHelper : EverestModule {
         level.Session.SetFlag(ReturnOutputFromName(flagName,0),setTo);
     }
     
+    // previously served purpose but made obsolete with ReturnOutputFromName(myString,0).
     public static string ReturnFlagFromName(string myString)
     {
         //Logger.Log(LogLevel.Info, "ManualHelper_ReturnFlagFromName1", "uh um i thw "+myString);
@@ -612,7 +622,7 @@ public class ManualHelper : EverestModule {
         // Thirdly is a Toggle by a second mod, added to a second mod's menu.   This is found by if splitInputArray[1] is not "ManualHelper" and if splitInputArray is 4-long.
         // Fourthly is a Toggle by a third mod, added to a second mod's menu.   This is found by if splitInputArray[1] is not "ManualHelper" and if splitInputArray is more than 4-long.
         string[] splitInputArray = input.Split('/');
-        Logger.Log(LogLevel.Info, "ManualHelper_ReturnOutputFromName1", input+" was "+splitInputArray.Length+" long.");
+        //Logger.Log(LogLevel.Info, "ManualHelper_ReturnOutputFromName1", input+" was "+splitInputArray.Length+" long.");
         if (splitInputArray.Length < 4)
         {
             Logger.Log(LogLevel.Error, nameof(ManualHelper),"[Error NonIdiot004] Uh oh! ReturnOutputFromName was fed something too small.");
@@ -649,7 +659,7 @@ public class ManualHelper : EverestModule {
         }
         if (output != "")
         {
-            Logger.Log(LogLevel.Info, "ManualHelper_ReturnOutputFromName2", input+" outputted "+output+" from type "+type);
+            //Logger.Log(LogLevel.Info, "ManualHelper_ReturnOutputFromName2", input+" outputted "+output+" from type "+type);
             return output;
         }
         Logger.Log(LogLevel.Error, nameof(ManualHelper),"[Error NonIdiot005] So it seems ReturnOutputFromName didn't return anything. HOW.");
@@ -987,8 +997,52 @@ public class ManualHelper : EverestModule {
             Audio.Play("event:/char/madeline/core_hair_charged",self.Position);//,"volume",2
         }
     }
+    
+    // particle and effects
+    public static ParticleType allergyParticle = new ParticleType
+    {
+        Color = Calc.HexToColor("3fddff"),
+        Color2 = Calc.HexToColor("16a2e3"),
+        ColorMode = ParticleType.ColorModes.Choose,
+        Size = 1f,
+        FadeMode = ParticleType.FadeModes.Late,
+        LifeMin = 0.3f,//6
+        LifeMax = 0.9f,//
+        SpeedMin = 5f,//10
+        SpeedMax = 10f,//24
+        SpeedMultiplier = 0.1f,
+        DirectionRange = 6.2831855f
+    };
+    public static float setStaminaTo = 0f;
+    public static int sneezeCooldown = 0;
+    public static int particleCooldown = 0;
+    public static bool particleCooldownSet = false;
+    public static int timeSinceParticleCooldownNOTSet = 80;
+    public static void DustAllergyEffects(Player self, Vector2 firstVec)
+    {
+        Vector2 secondVec = self.Center;// - (self.Scene as Level).LevelOffset
+        if (Vector2.Distance(firstVec, secondVec) < 32)
+        {
+            if (self.Stamina > setStaminaTo && sneezeCooldown == 0)
+            {
+                sneezeCooldown = 60;
+                Audio.Play("event:/char/madeline/idle_sneeze", self.Position);
+            }
+            self.Stamina = Math.Min(setStaminaTo,self.Stamina);
+            if (particleCooldown == 0)
+            {
+                particleCooldownSet = true;
+                int howManyTimes = timeSinceParticleCooldownNOTSet==80 ? 24 : 1;
+                self.level.Particles.Emit(allergyParticle,howManyTimes,firstVec,Vector2.One * 6f);
+                self.level.Particles.Emit(allergyParticle,howManyTimes,(firstVec+secondVec)/2,Vector2.One * 6f);
+                self.level.Particles.Emit(allergyParticle,howManyTimes,secondVec,Vector2.One * 6f);
+            }
+        }
+        Logger.Log("ManualHelper_Allergies",(Vector2.Distance(firstVec, secondVec)).ToString()+" "+firstVec.X+","+firstVec.Y+" "+secondVec.X+","+secondVec.Y);
+    }
 
-    // for preventing sliding on walls that aren't enabled, and elytra disabling
+    // on update.
+    // for preventing sliding on walls that aren't enabled, elytra disabling, and allergies
     private static int OnCelestePlayerNormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self)
     {
         if (!CanLRInteract(self, (int)self.Facing == -1,"WallInteractions","ManualHelper/WallToggles") && (self as Monocle.Entity).CollideCheck<Solid>(self.Position + Vector2.UnitX * (float)self.Facing))
@@ -1000,6 +1054,57 @@ public class ManualHelper : EverestModule {
         {
             CommunalHelperImports.SetElytraEnabled.Invoke(false);
             //CommunalHelperImports.SetInfiniteElytra.Invoke(self, false);
+        }
+
+        particleCooldownSet = false;
+        if (!ReturnFromBoolToggle("Bools/ManualHelper/StaminaToggles/MadelineHasAllergyMedication"))
+        {
+            if (self.Scene is Level)
+            {
+                sneezeCooldown = Math.Max(0, sneezeCooldown-1);
+                List<Component> myComponents = self.Scene.Tracker.GetComponents<DustGraphic>();
+                //List<Entity> myEntities = (self.Scene as Level).Entities.Select(new Func<Entity, bool>((entity) => entity is DustEdge)).ToList();
+                foreach (Component myComponent in myComponents)
+                {
+                    //if (myComponent is DustGraphic)
+                    //{
+                        //foreach (DustGraphic.Node node in (myComponent as DustGraphic).nodes)
+                        //{
+                            Vector2 firstVec = myComponent.Entity.Position;//node.Base.Center;
+
+                            DustAllergyEffects(self,firstVec);
+                        //}
+                    //}
+                }
+                List<Entity> myEntities = self.Scene.Tracker.GetEntitiesTrackIfNeeded<TriggerSpikes>();
+                bool shouldBreak = false;
+                foreach (Entity myEntity in myEntities)
+                {
+                    foreach (TriggerSpikes.SpikeInfo infoo in (myEntity as TriggerSpikes).spikes)
+                    {
+                        if (infoo.PlayerCheck())
+                        {
+                            DustAllergyEffects(self,infoo.WorldPosition);
+                            shouldBreak = true;
+                            break;
+                        }
+                    }
+                    if (shouldBreak)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        if (particleCooldownSet)
+        {
+            particleCooldown = 5;
+            timeSinceParticleCooldownNOTSet = 0;
+        }
+        else
+        {
+            particleCooldown = Math.Max(0,particleCooldown-1);
+            timeSinceParticleCooldownNOTSet = Math.Min(80, timeSinceParticleCooldownNOTSet+1);
         }
 
         return orig(self);
@@ -1093,11 +1198,11 @@ public class ManualHelper : EverestModule {
             {
                 if (self.Collidable)
                 {
-                    if (orig(self) != null)
+                    if (orig(self) != null || self.GetPlayerClimbing() != null)
                     {
                         Audio.Play("event:/game/general/assist_nonsolid_out",self.Position);
                         self.Collidable = false;
-                        Player realSelf = orig(self);
+                        Player realSelf = self.GetPlayerClimbing() != null ? self.GetPlayerClimbing() : orig(self);
                         if (ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") == 1)
                         {
                             realSelf.Dashes = 0;
@@ -1117,7 +1222,7 @@ public class ManualHelper : EverestModule {
     }
 
     // disables CrumbleBlocks (part 2)
-    private static Player OnCelesteSolidGetPlayerClimbing(On.Celeste.Solid.orig_GetPlayerClimbing orig, Solid self)
+    /*private static Player OnCelesteSolidGetPlayerClimbing(On.Celeste.Solid.orig_GetPlayerClimbing orig, Solid self)
     {
         if (self is CrumblePlatform)
         {
@@ -1145,7 +1250,7 @@ public class ManualHelper : EverestModule {
         }
 
         return orig(self);
-    }
+    }*/
 
     // flag initialization hook. probably the least stable thing in this mod for some reason?????
     private static void EverestEventsLevelLoaderOnLoadLevel(Level level, Player.IntroTypes introType, bool isFromData)
@@ -1162,9 +1267,9 @@ public class ManualHelper : EverestModule {
     public static float shakeAmount = 1;
     private static void OnCelestePlayerRender(On.Celeste.Player.orig_Render orig, Player self)
     {
-        
+        bool shouldShake = !self.flash;//ReturnFromBoolToggle("Bools/ManualHelper/ModdedEntityToggles/FakeMod/Awewa") == true;
         //shakeAmount = ReturnFromCounterToggle("HarshLenientOn/ManualHelper/VanillaEntityToggles/CrumbleBlocks") == 3 ? 0 : (self.Ducking ? 0.5f : 1);
-        shakeAmount = ReturnFromBoolToggle("Bools/ManualHelper/ModdedEntityToggles/FakeMod/Awewa") == true ? 0 : (self.Ducking ? 0.5f : 1);
+        shakeAmount = shouldShake ? (self.Ducking ? 0.5f : 1) : 0;
         
         Vector2 coolOffset = Vector2.Zero;
         float tempShakeAmount = shakeAmount + 0;

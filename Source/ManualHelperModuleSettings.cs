@@ -43,7 +43,7 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                     // <current value> is default 0, and set to a new value when changed in Slider form.
                     //     dont set this to anything other than 0 when doing .Add().
                     // <submenu it should go in> is self-explanatory and easy to figure out. search "int myInt = " if ur not sure tho
-                    // <type of setting> is 0 if MapSetting/Off/On, 1 if MapSetting/OffHarsh/OffLenient/On, 2 if button,
+                    // <type of setting> is 0 if MapSetting/Off/On, 1 if MapSetting/OffHarsh/OffLenient/On, 2 if button, 3 if Int.
                     int typeOfSetting = -1;
                     if (key.StartsWith("Bools/"))
                     {
@@ -53,9 +53,9 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                     {
                         typeOfSetting = 1;
                     }
-                    if (key.StartsWith("IntsMultiplier/") || key.StartsWith("IntsCustom/"))
+                    if (key.StartsWith("IntsCustom/") || key.StartsWith("IntsMultiplier/") || key.StartsWith("IntsStaminaDefaultZero/"))
                     {
-                        typeOfSetting = 2;
+                        typeOfSetting = 3;
                     }
                     if (typeOfSetting != -1)
                     {
@@ -152,39 +152,65 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                 i == 0 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_MapDefault") : (i == 1 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_OffHarsh") : (i == 2 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_OffLenient") : Dialog.Clean("MODOPTIONS_MANUALHELPER_On")));
         };
 
+        public string MapDefaultOrElseInts(int i, int[] DefaultElseInts, string addToEnd)
+        {
+            return
+                i == 0 ? Dialog.Clean("MODOPTIONS_MANUALHELPER_MapDefault") : (i<DefaultElseInts.Length ? (DefaultElseInts[i] == 9999 ? "All" : string.Format("{0:0.0}", (((float)DefaultElseInts[i])/10f).ToString())+addToEnd) : "grevos eror, yo");
+        }
+        public Func<int,string> CreateActionInts(int[] DefaultElseInts, string addToEnd)
+        {
+            // again dont do this at home
+            return (i) =>
+            {
+                return MapDefaultOrElseInts(i,DefaultElseInts,addToEnd);
+            };
+        }
+        public bool hasAtEnd(string input)
+        {
+            if (input.StartsWith("IntsMultiplier/"))
+            {
+                return true;
+            }
+            return false;
+        }
+
         // these two ints and two functions are for the buttons that set all of a submenu to a single value.
         public int TurnAllVarSection = -1;
         public int TurnAllVarResulte = -1;
         public void TurnAllOfSectionInto()
         {
-            foreach ((string settingName, TextMenu.Item myItem) in DynamicSettingItems)
+            if (TurnAllVarSection != -1 && TurnAllVarResulte != -1)
             {
-                if (ManualHelper.Settings.DynamicSettings.TryGetValue(settingName, out int[] value) && value[1] == TurnAllVarSection)
+                foreach ((string settingName, TextMenu.Item myItem) in DynamicSettingItems)
                 {
-                    if (myItem is TextMenu.Slider)
+                    if (ManualHelper.Settings.DynamicSettings.TryGetValue(settingName, out int[] value) && value[1] == TurnAllVarSection)
                     {
-                        // be sure that once more-than-3 options are added, that they are accounted for here too
-                        // this if statement is basically "if its an on/off, OR this is the "Map Default" button, set it all to the given button value."
-                        if (value[2] == 0 || TurnAllVarResulte == 0)
+                        if (myItem is TextMenu.Slider)
                         {
-                            ((TextMenu.Slider)myItem).Index = TurnAllVarResulte;
-                            ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
-                        }
-                        else if ((value[2] == 1 || value[2] == 2) && ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied))
-                        {
-                            int realResulte = TurnAllVarResulte;
-                            // the "off" button, which resets the value to the "disabled".
-                            if (TurnAllVarResulte == 1)
+                            // be sure that once more-than-3 options are added, that they are accounted for here too
+                            // this if statement is basically "if its an on/off, OR this is the "Map Default" button, set it all to the given button value."
+                            if (value[2] == 0 || TurnAllVarResulte == 0)
                             {
-                                realResulte = toIntIfied[1];
+                                ((TextMenu.Slider)myItem).Index = TurnAllVarResulte;
+                                ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
                             }
-                            // the "on" button, which resets the value to the "on", aka vanilla.
-                            else if (TurnAllVarResulte == 2)
+                            else if ((value[2] == 1 || value[2] == 3) && ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied))
                             {
-                                realResulte = toIntIfied[0];
+                                int realResulte = TurnAllVarResulte;
+                                // the "off" button, which resets the value to the "disabled".
+                                if (TurnAllVarResulte == 1)
+                                {
+                                    realResulte = toIntIfied[1];
+                                }
+                                // the "on" button, which resets the value to the "on", aka vanilla.
+                                else if (TurnAllVarResulte == 2)
+                                {
+                                    realResulte = toIntIfied[0];
+                                }
+
+                                ((TextMenu.Slider)myItem).Index = realResulte;
+                                ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
                             }
-                            ((TextMenu.Slider)myItem).Index = realResulte;
-                            ((TextMenu.Slider)myItem).OnValueChange(((TextMenu.Slider)myItem).Values[((TextMenu.Slider)myItem).Index].Item2);
                         }
                     }
                 }
@@ -210,7 +236,7 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
             return ManualHelperAllMenuColors[5];
         }
 
-        // this function gets a value from daInt, and returns:
+        // this function gets a value from daInt (what value it is currently on), and returns:
         // gray if isDisabled is true
         // white if 0 and the flag is default (or not ingame)
         // blue if 0 and flag is non-default
@@ -218,27 +244,43 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
         // pink if above 0 and flag is non-default
         public Color returnColorFromInt(int daInt, bool isDisabled, string settingName, int typeOfSetting)
         {
-            // add support for typeOfSetting once it is implemented
-            if (typeOfSetting < 0 || typeOfSetting > 1)
-            {
-                return errorColor(0,"typeOfSetting out of bounds!");
-            }
+            // add support for typeOfSetting if it is implemented
+            
+            // if Bools or HarshLenientOn
             if (typeOfSetting == 0 || typeOfSetting == 1)
             {
                 if (daInt < 0 || daInt > 2 + typeOfSetting)
                 {
-                    return errorColor(1,"value of it out of bounds!");
+                    return errorColor(1,"value of Bool or HarshLenientOn out of bounds!");
                 }
             }
+            // if some kind of Int
+            else if (typeOfSetting == 3)
+            {
+                bool errerer = ManualHelperNonBoolToggleToIntAllValues.TryGetValue(settingName, out int[] toOnAfied);
+                if (errerer)
+                {
+                    return errorColor(3,"ok so this. this isnt in ManualHelperNonBoolToggleToIntAllValues");
+                }
+                if (daInt < 0 || daInt > toOnAfied.Length-1)
+                {
+                    return errorColor(4,"value of other Int out of bounds! must be of range 0-"+(toOnAfied.Length-1));
+                }
+            }
+            // if not found in the above ones (means it is the wrong number)
+            else
+            {
+                return errorColor(0,"typeOfSetting is incorrect value "+typeOfSetting+"! It must be either 0, 1, or 3.");
+            }
             bool isCounterGood = ManualHelperNonBoolToggleToInt.TryGetValue(settingName, out int[] toIntIfied);
-            if (typeOfSetting == 1 && !isCounterGood)
+            if (typeOfSetting == 1 || typeOfSetting == 3 && !isCounterGood)
             {
                 return errorColor(2,"setting "+settingName+" not found in ManualHelperNonBoolToggleToInt!");
             }
-            bool changedByPlayer = daInt != 0;
+            // be sure to change changedByMap when more non-bool toggles are added! 
             int returnedFlag = GetFlag(settingName);
             int returnedCounter = GetCounter(settingName);
-            // be sure to change this when more non-bool toggles are added! 
+            bool changedByPlayer = daInt != 0;
             bool changedByMap = Engine.Scene is Level level &&
                 (typeOfSetting == 0 ? (returnedFlag == 0) : 
                 (typeOfSetting == 1 && toIntIfied != null ? (returnedCounter != toIntIfied[0]) :
@@ -282,7 +324,24 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
 
                     if (settingValue.Length >= 3)
                     {
-                        if (settingValue[2] == 0 || settingValue[2] == 1)
+                        int maxVal = -1;
+                        Func<int, string> myFunc = i => { return "grovas erre"; };
+                        if (settingValue[2] == 0)
+                        {
+                            myFunc = MapDefaultOrElseBool;
+                            maxVal = 2;
+                        }
+                        if (settingValue[2] == 1)
+                        {
+                            myFunc = MapDefaultOrElseHarshLenientOn;
+                            maxVal = 3;
+                        }
+                        if (settingValue[2] == 3 && ManualHelperNonBoolToggleToIntAllValues.TryGetValue(settingName, out int[] toOnAfied))
+                        {
+                            myFunc = CreateActionInts(toOnAfied,hasAtEnd(settingName)?"x":"");
+                            maxVal = toOnAfied.Length-1;
+                        }
+                        if (maxVal != -1)
                         {
                             /*string subStringString = settingName.Substring(settingName.IndexOf("/") + 1);
                             subStringString = subStringString.Substring(subStringString.IndexOf("/") + 1);
@@ -292,9 +351,9 @@ public class ManualHelperModuleSettings : EverestModuleSettings {
                             string theString = ReturnOutputFromName(settingName, 1);
                             myItem = new TextMenu.Slider(
                                 label: "  "+Dialog.Clean(theString),
-                                values: settingValue[2] == 0 ? MapDefaultOrElseBool : MapDefaultOrElseHarshLenientOn,
+                                values: myFunc,
                                 min: 0,
-                                max: 2 + settingValue[2],
+                                max: maxVal,
                                 value: settingValue[0]
                             );
                             ((TextMenu.Slider)myItem).Change(newValue =>
